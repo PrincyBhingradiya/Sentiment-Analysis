@@ -14,7 +14,7 @@ module.exports = {
 				};
 			}
 
-	        const hashedPassword = await bcrypt.hash(password, 10);
+	        // const hashedPassword = await bcrypt.hash(password, 10);
 	        const newUser = new User({ name, email: email.toLowerCase(), password: hashedPassword, type: type || "user" });
 	        await newUser.save(); // Save the user in the database
 
@@ -48,7 +48,7 @@ module.exports = {
 	        }
 	        console.log("User found:", user);
 
-	        const isPasswordValid = await bcrypt.compare(password, user.password);
+	        // const isPasswordValid = await bcrypt.compare(password, user.password);
 	        console.log("Password valid:", isPasswordValid);
 	        
 	        if (!isPasswordValid) {
@@ -164,7 +164,7 @@ module.exports = {
 			}
 	
 			// Update the user's password
-			const hashedPassword = await bcrypt.hash(newPassword, 10);
+			// const hashedPassword = await bcrypt.hash(newPassword, 10);
 			const updatePassword = await User.updateOne({  email: email.toLowerCase()},{ $set: { password: hashedPassword } } );
 			// await updatePassword.save();
 	
@@ -269,7 +269,7 @@ module.exports = {
 		  }
 	
 		  // Compare the old password with the stored password
-		  const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+		  const isPasswordValid = await .compare(oldPassword, user.password);
 		  if (!isPasswordValid) {
 			var sendData = {
 			  status: 400,
@@ -279,7 +279,7 @@ module.exports = {
 		  }
 	
 		  // Hash the new password and update it in the database
-		  const hashedPassword = await bcrypt.hash(newPassword, 10);
+		//   const hashedPassword = await .hash(newPassword, 10);
 		  const updatePassword = await User.updateOne({ _id: userId }, { $set: { password: hashedPassword } });
 	
 		  if (updatePassword.modifiedCount === 0) {

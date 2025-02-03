@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 app = module.exports = express();
-bcrypt = module.exports = require('bcrypt');
+// bcrypt = module.exports = require('bcrypt');
 jwt = module.exports = require('jsonwebtoken');
 nodemailer = module.exports = require('nodemailer');
 const serverless = require('serverless-http')
