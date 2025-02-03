@@ -5,6 +5,7 @@ app = module.exports = express();
 bcrypt = module.exports = require('bcrypt');
 jwt = module.exports = require('jsonwebtoken');
 nodemailer = module.exports = require('nodemailer');
+serverless = module.exports = require('serverless-http')
 // const redis = require('redis');
 // const client = redis.createClient(); 
 //body parser
