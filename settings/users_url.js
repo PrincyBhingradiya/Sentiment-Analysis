@@ -26,7 +26,7 @@ module.exports = {
 	    	});
 	    });
 
-	    app.post("/login", function (req, res) {
+	    app.post("/api/login", function (req, res) {
 	    	const { email, password ,keepMeSignedIn} = req.body;
 
 	    	// Email format validation
