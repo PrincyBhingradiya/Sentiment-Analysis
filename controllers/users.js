@@ -280,7 +280,7 @@ module.exports = {
 		  }
 	
 		  // Hash the new password and update it in the database
-		//   const hashedPassword = await .hash(newPassword, 10);
+		  const hashedPassword = await bcrypt.hash(newPassword, 10);
 		  const updatePassword = await User.updateOne({ _id: userId }, { $set: { password: hashedPassword } });
 	
 		  if (updatePassword.modifiedCount === 0) {

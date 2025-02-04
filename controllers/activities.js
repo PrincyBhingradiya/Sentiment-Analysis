@@ -1,5 +1,5 @@
 const { Activity, CompletedActivity, UserActivity } = require('../models/activity'); // Adjust the path accordingly
-
+const cron = require('node-cron');
 
 module.exports = {
     ADD_ACTIVITY: async function(data, callback) {
@@ -25,6 +25,7 @@ module.exports = {
             const newActivity = new Activity({
                 title,
                 isChecked: false, // Default unchecked
+                checkedBy: [],
                 createdAt: new Date()
             });
 
@@ -184,5 +185,13 @@ module.exports = {
     
         callback({ status: 200, data: { success: true, message: 'Activity marked as checked.', activity } });
     },
-    
 }
+cron.schedule('0 0 * * *', async () => {
+    try {
+        await Activity.updateMany({}, { $set: { checkedBy: [] }});
+        await UserActivity.updateMany({}, { $set: { checkedBy: [], isChecked: false }});
+        console.log("All activities have been unchecked (reset at midnight GMT).");
+    } catch (error) {
+        console.error("Error resetting activities:", error);
+    }
+});
