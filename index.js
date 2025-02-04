@@ -19,6 +19,7 @@ require("dotenv").config();
 
 //database connection
 mongoose = module.exports = require('mongoose');
+console.log("mongo",process.env.MONGO_URL);
 mongoose.connect(process.env.MONGO_URL).then(() => console.log('Connected!'));
 
 //variable exports
