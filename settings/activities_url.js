@@ -8,44 +8,33 @@ module.exports = {
             });
         });
         app.post('/add-user-activity', function (req, res) {
-            const token = req.headers['authorization'];  // Get token from headers
-        
-            console.log("Received Token:", token); // Log token for debugging
-        
+            const token = req.headers['authorization'];  
+            
             if (!token) {
                 return res.status(400).json({ success: false, message: 'Token is required.' });
             }
         
-            const actualToken = token; // Use the token directly
+            const actualToken = token; 
         
             const { title } = req.body;
             if (!title) {
                 return res.status(400).json({ success: false, message: 'Title is required.' });
             }
         
-            const data = { title, token: actualToken }; // Pass token
+            const data = { title, token: actualToken }; 
             activityController.ADD_USER_ACTIVITY(data, function (respData) {
-                res.status(respData.status).json(respData.data);
-            });
-        });
-        
-// Get Activities (Default + User)
-        app.get('/get-activities', authenticate, (req, res) => {
-            const userId = req.user._id; // Extract userId from decoded token
-
-            activityController.GET_ACTIVITIES({ userId }, function(respData) {
                 res.status(respData.status).json(respData.data);
             });
         });
 
         app.put('/mark-checked', authenticate, (req, res) => {
-            console.log("Decoded User from Token:", req.user); // Debugging
+            console.log("Decoded User from Token:", req.user); 
         
             if (!req.user || !req.user._id) {
                 return res.status(401).json({ success: false, message: "Unauthorized: Invalid token." });
             }
         
-            const userId = req.user._id; // 
+            const userId = req.user._id; 
             const { activityId } = req.body;
         
             if (!activityId) {
@@ -57,7 +46,15 @@ module.exports = {
             activityController.MARK_CHECKED(data, function (respData) {
                 res.status(respData.status).json(respData.data);
             });
-        });        
+        });  
+        
+        app.get('/get-activities', authenticate, (req, res) => {
+            const userId = req.user._id; 
+
+            activityController.GET_ACTIVITIES({ userId }, function(respData) {
+                res.status(respData.status).json(respData.data);
+            });
+        });      
         
 }
 }

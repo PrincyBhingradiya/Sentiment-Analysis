@@ -1,21 +1,19 @@
+const authenticate = require('../middleware/authenticate'); 
+
 module.exports = {
 	BindUrl: function () {
 	    app.post("/signup", function (req, res) {
 	    	const { name, email, password,type } = req.body;
 
-	    	// Email format validation
 			const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-			// Password length validation
 			const validatePassword = (password) => password.length >= 8;
 
 		    if (!name || !email || !password) {
 		        return res.status(400).json({ success: false, message: 'All fields are required.' });
 		    }
-		    // Email validation
 		    if (!emailRegex.test(email)) {
 		        return res.status(400).json({ success: false, message: 'Invalid email format. ' });
 		    }
-		    // Password validation
 		    if (!validatePassword(password)) {
 		        return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
 		    }
@@ -29,16 +27,13 @@ module.exports = {
 	    app.post("/login", function (req, res) {
 	    	const { email, password ,keepMeSignedIn} = req.body;
 
-	    	// Email format validation
 			const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 			
-			// Password length validation
 			const validatePassword = (password) => password.length >= 8;
 
 		    if (!email || !password) {
 		        return res.status(400).json({ success: false, message: 'All fields are required.' });
 		    }
-		     // Email validation
 		     if (!emailRegex.test(email)) {
 		        return res.status(400).json({ success: false, message: 'Invalid email format.' });
 		    }
@@ -62,12 +57,10 @@ module.exports = {
 		app.post("/reset", function (req, res) {
     const { email, otp, newPassword } = req.body;
 
-    // Validate inputs
     if (!email || !otp || !newPassword) {
         return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required.' });
     }
 
-    // Password length validation
     const validatePassword = (password) => password.length >= 8;
     if (!validatePassword(newPassword)) {
         return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
@@ -91,39 +84,49 @@ module.exports = {
 			res.status(respData.status).json(respData.data);
 		});
 		});
-		app.post("/edit-profile", function (req, res) {
-			const { userId, newname, newEmail } = req.body;
-
-			// Validate that all necessary fields are provided
-			if (!userId || !newname || !newEmail) {
-				return res.status(400).json({ success: false, message: 'userId, newname, and newEmail are required.' });
+		app.post("/edit-profile", authenticate, function (req, res) {
+		
+			if (!req.user || !req.user._id) {
+				return res.status(401).json({ success: false, message: "Unauthorized: Invalid token." });
 			}
-
-			var data = req.body;
+		
+			const userId = req.user._id; 
+			const { newname, newEmail } = req.body;
+		
+			if (!newname || !newEmail) {
+				return res.status(400).json({ success: false, message: "newname and newEmail are required." });
+			}
+		
+			const data = { userId, newname, newEmail };
+		
 			usersController.EDIT_PROFILE(data, function(respData) {
 				res.status(respData.status).json(respData.data);
 			});
 		});
-		app.post("/change-password", function (req, res) {
-			const { userId, oldPassword, newPassword, confirmPassword } = req.body;
-	  
-			// Validate that all necessary fields are provided
-			if (!userId || !oldPassword || !newPassword || !confirmPassword) {
-			  return res.status(400).json({ success: false, message: 'userId, oldPassword, newPassword, and confirmPassword are required.' });
+		
+		app.post("/change-password", authenticate, function (req, res) {
+		
+			if (!req.user || !req.user._id) {
+				return res.status(401).json({ success: false, message: "Unauthorized: Invalid token." });
 			}
+		
+			const userId = req.user._id; // Extract userId from token
+			const { oldPassword, newPassword, confirmPassword } = req.body;
+		
+			if (!oldPassword || !newPassword || !confirmPassword) {
+				return res.status(400).json({ success: false, message: "Old password, new password, and confirm password are required." });
+			}
+		
 			if (newPassword !== confirmPassword) {
-				var sendData = {
-				  status: 400,
-				  data: { success: false, message: 'New password and confirm password do not match.' }
-				};
-				callback(sendData);
-				return;
-			  }  
-			var data = req.body;
-			usersController.CHANGE_PASSWORD(data, function(respData) {
-			  res.status(respData.status).json(respData.data);
+				return res.status(400).json({ success: false, message: "New password and confirm password do not match." });
+			}
+		
+			const data = { userId, oldPassword, newPassword };
+		
+			usersController.CHANGE_PASSWORD(data, function (respData) {
+				res.status(respData.status).json(respData.data);
 			});
-		});	  
+		}); 
 	}
 }
 

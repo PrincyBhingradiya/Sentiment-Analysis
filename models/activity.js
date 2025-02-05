@@ -8,7 +8,7 @@ const activitySchema = new mongoose.Schema({
     },
     createdAt: {
         type: Date,
-        default: Date.now, // Automatically set the creation date
+        default: Date.now, 
     }
 });
 const userActivitySchema = new mongoose.Schema({
@@ -19,11 +19,10 @@ const userActivitySchema = new mongoose.Schema({
     },
     createdAt: {
         type: Date,
-        default: Date.now, // Automatically set the creation date
+        default: Date.now, 
     },
-    userId: {  // Link user-created activities to a specific user
+    userId: {  
         type: mongoose.Schema.Types.ObjectId,
-        // ref: 'User',
         required: true
     }
 });
@@ -31,10 +30,10 @@ const userActivitySchema = new mongoose.Schema({
   const completedActivitySchema = new mongoose.Schema({
     activityId: { 
         type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Activity', // This references the 'Activity' model
+        ref: 'Activity', 
         required: true 
     },
-    userId: {  // Link completion to a specific user
+    userId: {  
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true

@@ -1,4 +1,5 @@
-const { Activity, CompletedActivity, UserActivity } = require('../models/activity'); // Adjust the path accordingly
+const { isConstructorDeclaration } = require('typescript');
+const { Activity, CompletedActivity, UserActivity } = require('../models/activity'); 
 const cron = require('node-cron');
 
 module.exports = {
@@ -24,7 +25,7 @@ module.exports = {
         
             const newActivity = new Activity({
                 title,
-                isChecked: false, // Default unchecked
+                isChecked: false, 
                 checkedBy: [],
                 createdAt: new Date()
             });
@@ -45,7 +46,7 @@ module.exports = {
     },
 
         ADD_USER_ACTIVITY: async function (data, callback) {
-            const { title, token } = data;  // Ensure token is received
+            const { title, token } = data;  
             
             if (!title || title.trim() === "") {
                 return callback({
@@ -59,7 +60,7 @@ module.exports = {
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 console.log("Decoded Token:", decoded);
 
-                const userId = decoded._id; // Ensure _id exists in token
+                const userId = decoded._id; 
     
                 if (!userId) {
                     return callback({
@@ -73,7 +74,7 @@ module.exports = {
                     title,
                     isChecked: false,
                     createdAt: new Date(),
-                    userId: userId  // Ensure userId is included
+                    userId: userId  
                 });
     
                 await newUserActivity.save();
@@ -100,6 +101,12 @@ module.exports = {
                 }
             
                 try {
+                    // Get the current date at GMT (Midnight)
+                    const now = new Date();
+
+                    const todayStart = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 5, 30, 0, 0); 
+                    const todayEnd = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 5, 29, 59, 999); 
+
                     // Check if activity exists in either default or user-created activities
                     let activity = await Activity.findById(activityId) || await UserActivity.findById(activityId);
             
@@ -107,8 +114,15 @@ module.exports = {
                         return callback({ status: 404, data: { success: false, message: 'Activity not found.' } });
                     }
             
-                    let existingCompleted = await CompletedActivity.findOne({ activityId, userId });
-            
+                // Check if the activity was completed today
+                let existingCompleted = await CompletedActivity.findOne({
+                    activityId,
+                    userId,
+                    completedAt: { $gte: todayStart, $lte: todayEnd } 
+                });        
+                
+                console.log("v ss>> ", existingCompleted)
+
                     if (existingCompleted) {
                         if (!existingCompleted.ischecked) {
                             existingCompleted.ischecked = true;
@@ -122,7 +136,7 @@ module.exports = {
                     const completedActivity = new CompletedActivity({
                         activityId: activity._id,
                         userId,
-                        title: activity.title, // Store the fetched title
+                        title: activity.title, 
                         completedAt: new Date(),
                         ischecked: true
                     });
@@ -147,8 +161,12 @@ module.exports = {
                 }
             
                 try {
+                    const now = new Date();
+                    const todayStart = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 5, 30, 0, 0); 
+                    const todayEnd = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 5, 29, 59, 999); 
+
                     // Get all checked activity records for this user (including ischecked status)
-                    const completedActivities = await CompletedActivity.find({ userId }).select("activityId ischecked");
+                    const completedActivities = await CompletedActivity.find({ userId, completedAt: { $gte: todayStart, $lte: todayEnd } }).select("activityId ischecked");
                     
                     // Convert checked activities into a Map for quick lookup
                     const checkedActivityMap = new Map();
@@ -167,7 +185,6 @@ module.exports = {
                         $or: [{ _id: { $nin: Array.from(checkedActivityMap.keys()) } }, { _id: { $in: Array.from(checkedActivityMap.keys()) } }]
                     });
             
-                    console.log("Date >>", new Date());
             
                     // Combine all activities, add `ischecked` status, and remove duplicates
                     const activityMap = new Map();
@@ -175,7 +192,7 @@ module.exports = {
                         activityMap.set(activity._id.toString(), {
                             _id: activity._id,
                             title: activity.title,
-                            ischecked: checkedActivityMap.get(activity._id.toString()) || false, // Check if it's marked as checked
+                            ischecked: checkedActivityMap.get(activity._id.toString()) || false, 
                             createdAt: activity.createdAt
                         });
                     });
@@ -192,53 +209,4 @@ module.exports = {
                     });
                 }
             }
-            
-
-    // Get Default + User Activities Based on User ID
-    // GET_ACTIVITIES: async function (data, callback) {
-    //     const { userId } = data;
-    
-    //     if (!userId) {
-    //         return callback({
-    //             status: 400,
-    //             data: { success: false, message: 'User ID is required.' }
-    //         });
-    //     }
-    
-    //     try {
-    //         // Get all checked activity IDs for this user
-    //         const checkedActivities = await CompletedActivity.find({ userId, ischecked: true }).select("activityId");
-    //         const checkedActivityIds = checkedActivities.map(activity => activity.activityId);
-    
-    //         // Fetch default activities (including checked ones)
-    //         const defaultActivities = await Activity.find({
-    //             $or: [{ _id: { $nin: checkedActivityIds } }, { _id: { $in: checkedActivityIds } }]
-    //         });
-    
-    //         // Fetch user-created activities (including checked ones)
-    //         const userActivities = await UserActivity.find({
-    //             userId,
-    //             $or: [{ _id: { $nin: checkedActivityIds } }, { _id: { $in: checkedActivityIds } }]
-    //         });
-    
-    //         console.log("Date >>", new Date());
-    
-    //         // Combine all activities and remove duplicates
-    //         const activityMap = new Map();
-    //         [...defaultActivities, ...userActivities].forEach(activity => {
-    //             activityMap.set(activity._id.toString(), activity);
-    //         });
-    
-    //         callback({
-    //             status: 200,
-    //             data: { success: true, activities: Array.from(activityMap.values()) }
-    //         });
-    //     } catch (error) {
-    //         console.error("Get activities error:", error);
-    //         callback({
-    //             status: 500,
-    //             data: { success: false, message: 'Failed to fetch activities.', error: error.message }
-    //         });
-    //     }
-    // }   
 }   

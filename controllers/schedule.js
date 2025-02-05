@@ -1,27 +1,24 @@
 const Schedule = require('../models/schedules');
 	 
 module.exports = {
+	SCHEDULE_CREATE: async function (data, callback) {
+		const { userId } = data; 
 	
-    SCHEDULE_CREATE: async function(data, callback) {
-		const { userId, date, time } = data; // You may need userId to associate the schedule with a user
 		try {
-			// Create a new schedule
-			const newSchedule = new Schedule({ userId, date, time });
-			await newSchedule.save(); // Save to the database
-			var sendData = {
+			const newSchedule = new Schedule({ userId });
+			await newSchedule.save();
+	
+			callback({
 				status: 201,
-				data: { success: true, message: 'Schedule created successfully.' }
-			};
-			callback(sendData);
-            return;
+				data: { success: true, message: 'Schedule created successfully.', schedule: newSchedule }
+			});
+	
 		} catch (error) {
-			var sendData = {
+			console.error("Error creating schedule:", error);
+			callback({
 				status: 500,
 				data: { success: false, message: 'Server error while creating schedule.', error: error.message }
-			};
-			console.error("Error creating schedule:", error);
-			callback(sendData);
-			return;
+			});
 		}
 	},
 
@@ -59,69 +56,60 @@ module.exports = {
 			return;
 		}
 	},
-
 	SCHEDULE_GET: async function(data, callback) {
 		const { userId } = data;
-
+	
 		try {
-			// Get all schedules for a user
+			// Fetch schedules for the user
 			const schedules = await Schedule.find({ userId });
-
-			var sendData = {
+	
+			callback({
 				status: 200,
 				data: { success: true, schedules }
-			};
-			callback(sendData);
-			return;
+			});
+	
 		} catch (error) {
-			var sendData = {
+			console.error("Error fetching schedules:", error);
+			callback({
 				status: 500,
 				data: { success: false, message: 'Server error while fetching schedules.', error: error.message }
-			};
-			console.error("Error fetching schedules:", error);
-			callback(sendData);
-			return;
+			});
 		}
-	},
-	SCHEDULE_DELETE: async function(data, callback) {
+	},	
+
+	SCHEDULE_DELETE: async function (data, callback) {
 		const { userId, scheduleId } = data;
 	
 		try {
-			// Delete the schedule based on userId and scheduleId
 			const objectId = new mongoose.Types.ObjectId(scheduleId);
 			const deletedSchedule = await Schedule.deleteOne({ _id: objectId, userId });
 	
 			if (deletedSchedule.deletedCount === 0) {
-				var sendData = {
+				return callback({
 					status: 400,
-					data: { success: false, message: 'Schedule deletion failed. Either schedule does not exist or does not belong to the user.' }
-				};
-				callback(sendData);
-				return;
+					data: { success: false, message: "Schedule deletion failed. Either schedule does not exist or does not belong to the user." }
+				});
 			}
 	
-			var sendData = {
+			callback({
 				status: 200,
-				data: { success: true, message: 'Schedule deleted successfully.' }
-			};
-			callback(sendData);
-			return;
+				data: { success: true, message: "Schedule deleted successfully." }
+			});
 		} catch (error) {
-			var sendData = {
-				status: 500,
-				data: { success: false, message: 'Server error while deleting schedule.', error: error.message }
-			};
 			console.error("Error deleting schedule:", error);
-			callback(sendData);
-			return;
+			callback({
+				status: 500,
+				data: { success: false, message: "Server error while deleting schedule.", error: error.message }
+			});
 		}
 	},
+		
 		SCHEDULE_CREATE: async function (data, callback) {
 			const { userId, date, time } = data;
 			try {
 				// Create a new schedule
 				const newSchedule = new Schedule({ userId, date, time });
-				await newSchedule.save(); // Save to the database
+				await newSchedule.save(); 
 				
 				// Calculate the delay until the scheduled time
 				const scheduledTime = new Date(`${date} ${time}`);
@@ -129,7 +117,7 @@ module.exports = {
 	
 				if (delay > 0) {
 					// Schedule the notification
-					cron.schedule(`*/1 * * * *`, async () => { // Every minute
+					cron.schedule(`*/1 * * * *`, async () => { 
 						const now = new Date();
 						if (now >= scheduledTime) {
 							// Send notification if current time matches or exceeds the scheduled time

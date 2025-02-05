@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 const authenticate = (req, res, next) => {
-    const token = req.headers['authorization']; // Get token from headers
+    const token = req.headers['authorization']; 
 
     if (!token) {
         return res.status(400).json({ success: false, message: 'Token is required.' });
@@ -9,7 +9,7 @@ const authenticate = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = { _id: decoded._id }; // Attach the decoded token to req.user
+        req.user = { _id: decoded._id }; 
 
         if (!req.user._id) {
             return res.status(400).json({ success: false, message: 'Invalid token: userId is missing.' });

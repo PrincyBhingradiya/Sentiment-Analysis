@@ -6,7 +6,7 @@ module.exports = {
 		const { name, email, password,type } = data;
 		try {
 	        const emailLower = email.toLowerCase();
-	        const existingUser = await User.findOne({ email: emailLower }); // Use Mongoose to find the user
+	        const existingUser = await User.findOne({ email: emailLower }); 
 	        if (existingUser) {
 				var sendData = {
 					status: 400,
@@ -16,7 +16,7 @@ module.exports = {
 
 	        const hashedPassword = await bcrypt.hash(password, 10);
 	        const newUser = new User({ name, email: email.toLowerCase(), password: hashedPassword, type: type || "user" });
-	        await newUser.save(); // Save the user in the database
+	        await newUser.save(); 
 
 	        var sendData = {
 	        	status: 201,
@@ -37,7 +37,7 @@ module.exports = {
 		const { email, password,keepMeSignedIn } = data;
 		try {
 	        const emailLower = email.toLowerCase();
-	        const user = await User.findOne({ email: emailLower }); // Use Mongoose to find the user
+	        const user = await User.findOne({ email: emailLower }); 
 	        if (!user) {
 	        	var sendData = {
 		        	status: 404,
@@ -49,7 +49,6 @@ module.exports = {
 	        console.log("User found:", user);
 
 	        const isPasswordValid = await bcrypt.compare(password, user.password);
-	        // console.log("Password valid:", isPasswordValid);
 	        
 	        if (!isPasswordValid) {
 	            var sendData = {
@@ -106,7 +105,7 @@ module.exports = {
 			let random = Math.floor(Math.random() * (max - min + 1)) + min;
 
 			const newforgotPassword = new forgotPassword({ email: email.toLowerCase(), otp: random });
-	        await newforgotPassword.save(); // Save the user in the database
+	        await newforgotPassword.save(); 
 	
 			// Send reset link via email
 			const message = `Hello there,
@@ -223,87 +222,82 @@ module.exports = {
 			if (existingUser && existingUser._id.toString() !== userId) {
 				return callback({
 					status: 400,
-					data: { success: false, message: 'Email is already taken by another user.' }
+					data: { success: false, message: "Email is already taken by another user." }
 				});
 			}
-
+	
 			// Update user data (username and email)
 			const updatedUser = await User.findByIdAndUpdate(
 				userId,
 				{ name: newname, email: newEmail.toLowerCase() },
-				{ new: true }  // return the updated user
+				{ new: true }  
 			);
-
+	
 			if (!updatedUser) {
 				return callback({
 					status: 404,
-					data: { success: false, message: 'User not found.' }
+					data: { success: false, message: "User not found." }
 				});
 			}
-
+	
 			callback({
 				status: 200,
-				data: { success: true, message: 'Profile updated successfully.', user: updatedUser }
+				data: { success: true, message: "Profile updated successfully.", user: updatedUser }
 			});
 		} catch (error) {
 			console.error("Error updating profile:", error);
 			callback({
 				status: 500,
-				data: { success: false, message: 'Server error.', error: error.message }
-			})
-		}
-	},
-	CHANGE_PASSWORD: async function(data, callback) {
-		const { userId, oldPassword, newPassword, confirmPassword } = data;
-	
-		try {
-		  // Find the user by ID
-		  const user = await User.findById(userId);
-	
-		  if (!user) {
-			var sendData = {
-			  status: 404,
-			  data: { success: false, message: 'User not found.' }
-			};
-			return callback(sendData);
-		  }
-	
-		  // Compare the old password with the stored password
-		  const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
-		  
-		  if (!isPasswordValid) {
-			var sendData = {
-			  status: 400,
-			  data: { success: false, message: 'Incorrect old password.' }
-			};
-			return callback(sendData);
-		  }
-	
-		  // Hash the new password and update it in the database
-		  const hashedPassword = await bcrypt.hash(newPassword, 10);
-		  const updatePassword = await User.updateOne({ _id: userId }, { $set: { password: hashedPassword } });
-	
-		  if (updatePassword.modifiedCount === 0) {
-			var sendData = {
-			  status: 400,
-			  data: { success: false, message: 'Password update failed.' }
-			};
-			return callback(sendData);
-		  }
-	
-		  var sendData = {
-			status: 200,
-			data: { success: true, message: 'Password updated successfully.' }
-		  };
-		  callback(sendData);
-	
-		} catch (error) {
-		  var sendData = {
-			status: 500,
-			data: { success: false, message: 'Server error.', error: error.message }
-		  };
-		  console.error("Change password error:", error);
-		  callback(sendData);
+				data: { success: false, message: "Server error.", error: error.message }
+			});
 		}
 	},	
+	CHANGE_PASSWORD: async function(data, callback) {
+		const { userId, oldPassword, newPassword } = data;
+	
+		try {
+			// Find the user by ID
+			const user = await User.findById(userId);
+	
+			if (!user) {
+				return callback({
+					status: 404,
+					data: { success: false, message: "User not found." }
+				});
+			}
+	
+			// Compare the old password with the stored password
+			const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+	
+			if (!isPasswordValid) {
+				return callback({
+					status: 400,
+					data: { success: false, message: "Incorrect old password." }
+				});
+			}
+	
+			// Hash the new password and update it in the database
+			const hashedPassword = await bcrypt.hash(newPassword, 10);
+			const updatePassword = await User.updateOne({ _id: userId }, { $set: { password: hashedPassword } });
+	
+			if (updatePassword.modifiedCount === 0) {
+				return callback({
+					status: 400,
+					data: { success: false, message: "Password update failed." }
+				});
+			}
+	
+			callback({
+				status: 200,
+				data: { success: true, message: "Password updated successfully." }
+			});
+		} catch (error) {
+			console.error("Change password error:", error);
+			callback({
+				status: 500,
+				data: { success: false, message: "Server error.", error: error.message }
+			});
+		}
+	}
+		
 }
