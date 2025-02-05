@@ -1,3 +1,5 @@
+const { type } = require("os");
+
 const activitySchema = new mongoose.Schema({
     title: {
         type: String,
@@ -37,14 +39,23 @@ const userActivitySchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    title: {
+        type: String,
+        required: true
+    },
     completedAt: { 
         type: Date, 
         default: Date.now 
+    },
+    ischecked:{
+        type:Boolean,
+        default:false
     }
   });
   
   const Activity = mongoose.model('Activity', activitySchema);
   const UserActivity = mongoose.model('UserActivity', userActivitySchema);
   const CompletedActivity = mongoose.model('CompletedActivity', completedActivitySchema);
+
   module.exports = { Activity, CompletedActivity ,UserActivity};
 

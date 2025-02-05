@@ -43,6 +43,7 @@ module.exports = {
             });
         }
     },
+
         ADD_USER_ACTIVITY: async function (data, callback) {
             const { title, token } = data;  // Ensure token is received
             
@@ -90,108 +91,154 @@ module.exports = {
             }
         },
 
-    // Get Default + User Activities Based on User ID
-    GET_ACTIVITIES: async function(data, callback) {
-        const { userId } = data;
-    
-        if (!userId) {
-            return callback({
-                status: 400,
-                data: { success: false, message: 'User ID is required.' }
-            });
-        }
-    
-        try {
-            // Fetch Default Activities (Only show checked activities by this user OR activities that haven't been checked yet)
-            const defaultActivities = await Activity.find({
-                $or: [
-                    { checkedBy: { $in: [userId] } },
-                    { checkedBy: { $size: 0 } }
-                ]
-            });
-    
-            // Fetch User-Specific Activities for this particular user
-            const userActivities = await UserActivity.find({
-                userId,
-                isChecked: true,
-                $or: [
-                    { checkedBy: { $in: [userId] } },
-                    { checkedBy: { $size: 0 } }
-                ],
+         // Mark Activity as Checked (Per User)MARK_CHECKED: async function (data, callback) {
+            MARK_CHECKED: async function (data, callback) {
+                const { activityId, userId } = data;
+            
+                if (!activityId || !userId) {
+                    return callback({ status: 400, data: { success: false, message: 'Activity ID and User ID are required.' } });
+                }
+            
+                try {
+                    // Check if activity exists in either default or user-created activities
+                    let activity = await Activity.findById(activityId) || await UserActivity.findById(activityId);
+            
+                    if (!activity) {
+                        return callback({ status: 404, data: { success: false, message: 'Activity not found.' } });
+                    }
+            
+                    let existingCompleted = await CompletedActivity.findOne({ activityId, userId });
+            
+                    if (existingCompleted) {
+                        if (!existingCompleted.ischecked) {
+                            existingCompleted.ischecked = true;
+                            existingCompleted.completedAt = new Date();
+                            await existingCompleted.save();
+                        }
+                        return callback({ status: 200, data: { success: true, message: 'Activity already checked, updated timestamp.', activity: existingCompleted } });
+                    }
+            
+                    // Store the title inside CompletedActivity
+                    const completedActivity = new CompletedActivity({
+                        activityId: activity._id,
+                        userId,
+                        title: activity.title, // Store the fetched title
+                        completedAt: new Date(),
+                        ischecked: true
+                    });
+            
+                    await completedActivity.save();
+            
+                    callback({ status: 200, data: { success: true, message: 'Activity marked as checked.', completedActivity } });
+            
+                } catch (error) {
+                    console.error("Mark checked error:", error);
+                    callback({ status: 500, data: { success: false, message: 'Failed to mark activity as checked.', error: error.message } });
+                }
+            },
+            GET_ACTIVITIES: async function (data, callback) {
+                const { userId } = data;
+            
+                if (!userId) {
+                    return callback({
+                        status: 400,
+                        data: { success: false, message: 'User ID is required.' }
+                    });
+                }
+            
+                try {
+                    // Get all checked activity records for this user (including ischecked status)
+                    const completedActivities = await CompletedActivity.find({ userId }).select("activityId ischecked");
+                    
+                    // Convert checked activities into a Map for quick lookup
+                    const checkedActivityMap = new Map();
+                    completedActivities.forEach(activity => {
+                        checkedActivityMap.set(activity.activityId.toString(), activity.ischecked);
+                    });
+            
+                    // Fetch default activities (including checked ones)
+                    const defaultActivities = await Activity.find({
+                        $or: [{ _id: { $nin: Array.from(checkedActivityMap.keys()) } }, { _id: { $in: Array.from(checkedActivityMap.keys()) } }]
+                    });
+            
+                    // Fetch user-created activities (including checked ones)
+                    const userActivities = await UserActivity.find({
+                        userId,
+                        $or: [{ _id: { $nin: Array.from(checkedActivityMap.keys()) } }, { _id: { $in: Array.from(checkedActivityMap.keys()) } }]
+                    });
+            
+                    console.log("Date >>", new Date());
+            
+                    // Combine all activities, add `ischecked` status, and remove duplicates
+                    const activityMap = new Map();
+                    [...defaultActivities, ...userActivities].forEach(activity => {
+                        activityMap.set(activity._id.toString(), {
+                            _id: activity._id,
+                            title: activity.title,
+                            ischecked: checkedActivityMap.get(activity._id.toString()) || false, // Check if it's marked as checked
+                            createdAt: activity.createdAt
+                        });
+                    });
+            
+                    callback({
+                        status: 200,
+                        data: { success: true, activities: Array.from(activityMap.values()) }
+                    });
+                } catch (error) {
+                    console.error("Get activities error:", error);
+                    callback({
+                        status: 500,
+                        data: { success: false, message: 'Failed to fetch activities.', error: error.message }
+                    });
+                }
+            }
+            
 
-            });
-    console.log("Date >>", new Date())
-            callback({
-                status: 200,
-                data: { success: true, activities: [...defaultActivities, ...userActivities] }
-            });
-        } catch (error) {
-            console.error("Get activities error:", error);
-            callback({
-                status: 500,
-                data: { success: false, message: 'Failed to fetch activities.', error: error.message }
-            });
-        }
-    },
+    // Get Default + User Activities Based on User ID
+    // GET_ACTIVITIES: async function (data, callback) {
+    //     const { userId } = data;
     
-    // Mark Activity as Checked (Per User)
-    MARK_CHECKED: async function(data, callback) {
-        const { activityId, userId } = data;
+    //     if (!userId) {
+    //         return callback({
+    //             status: 400,
+    //             data: { success: false, message: 'User ID is required.' }
+    //         });
+    //     }
     
-        if (!activityId || !userId) {
-            return callback({ status: 400, data: { success: false, message: 'Activity ID and User ID are required.' } });
-        }
+    //     try {
+    //         // Get all checked activity IDs for this user
+    //         const checkedActivities = await CompletedActivity.find({ userId, ischecked: true }).select("activityId");
+    //         const checkedActivityIds = checkedActivities.map(activity => activity.activityId);
     
-        let activity = await Activity.findById(activityId);
-        let isUserActivity = false;
+    //         // Fetch default activities (including checked ones)
+    //         const defaultActivities = await Activity.find({
+    //             $or: [{ _id: { $nin: checkedActivityIds } }, { _id: { $in: checkedActivityIds } }]
+    //         });
     
-        // Check if it's a User Activity or Default Activity
-        if (!activity) {
-            activity = await UserActivity.findById(activityId);
-            isUserActivity = true;
-        }
+    //         // Fetch user-created activities (including checked ones)
+    //         const userActivities = await UserActivity.find({
+    //             userId,
+    //             $or: [{ _id: { $nin: checkedActivityIds } }, { _id: { $in: checkedActivityIds } }]
+    //         });
     
-        if (!activity) {
-            return callback({ status: 404, data: { success: false, message: 'Activity not found.' } });
-        }
+    //         console.log("Date >>", new Date());
     
-        // If the activity is already checked by the user, return conflict
-        if (activity.checkedBy && activity.checkedBy.includes(userId)) {
-            return callback({ status: 409, data: { success: false, message: 'Activity already checked by this user.' } });
-        }
+    //         // Combine all activities and remove duplicates
+    //         const activityMap = new Map();
+    //         [...defaultActivities, ...userActivities].forEach(activity => {
+    //             activityMap.set(activity._id.toString(), activity);
+    //         });
     
-        // Add user to the checkedBy array for both types of activities
-        if (!activity.checkedBy) {
-            activity.checkedBy = [];
-        }
-        
-        activity.checkedBy.push(userId);
-    
-        // If it is a user-created activity, mark as checked specifically for the user
-        if (isUserActivity) {
-            activity.isChecked = true;  // Mark user activity as checked
-        }
-    
-        await activity.save();
-    
-        // Save Completion Record (tracking the completion)
-        const completedActivity = new CompletedActivity({
-            activityId: activity._id,
-            userId,
-            completedAt: new Date(),
-        });
-    
-        await completedActivity.save();
-    
-        callback({ status: 200, data: { success: true, message: 'Activity marked as checked.', activity } });
-    },
-}
-cron.schedule('0 0 * * *', async () => {
-    try {
-        await Activity.updateMany({}, { $set: { checkedBy: [] }});
-        await UserActivity.updateMany({}, { $set: { checkedBy: [], isChecked: false }});
-        console.log("All activities have been unchecked (reset at midnight GMT).");
-    } catch (error) {
-        console.error("Error resetting activities:", error);
-    }
-});
+    //         callback({
+    //             status: 200,
+    //             data: { success: true, activities: Array.from(activityMap.values()) }
+    //         });
+    //     } catch (error) {
+    //         console.error("Get activities error:", error);
+    //         callback({
+    //             status: 500,
+    //             data: { success: false, message: 'Failed to fetch activities.', error: error.message }
+    //         });
+    //     }
+    // }   
+}   
