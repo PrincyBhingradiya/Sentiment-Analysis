@@ -7,15 +7,37 @@ jwt = module.exports = require('jsonwebtoken');
 nodemailer = module.exports = require('nodemailer');
 const serverless = require('serverless-http')
 module.exports = serverless(app);
+cron = require('node-cron'); // For scheduling tasks
 
-// const redis = require('redis');
-// const client = redis.createClient(); 
 //body parser
 var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
-
 require("dotenv").config();
+
+//initialize firebase in nodejs
+
+// const admin = require('firebase-admin');
+// const serviceAccount = require('../config/serviceAccountKey.json');
+
+// admin.initializeApp({
+//     credential: admin.credential.cert(serviceAccount)
+// });
+
+//  sendNotification = async (token, title, body) => {
+//     const message = {
+//         notification: { title, body },
+//         token: token
+//     };
+
+//     try {
+//         const response = await admin.messaging().send(message);
+//         console.log('Notification sent:', response);
+//     } catch (error) {
+//         console.error('Error sending notification:', error);
+//     }
+// };
+// module.exports = sendNotification;
 
 //database connection
 mongoose = module.exports = require('mongoose');
@@ -37,6 +59,6 @@ app.listen(port, () => {
 	console.log(`Success ${port}`);
 });
 
-//notification schedule task
 
- cron = require('node-cron'); // For scheduling tasks
+console.log(process.cwd());
+

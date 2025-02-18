@@ -8,9 +8,9 @@ module.exports = {
             }
         
             const userId = req.user._id; 
-    
-            const data = { userId};
-        
+            const { date, time } = req.body; 
+            const data = { userId, date, time };
+
             userschedule.SCHEDULE_CREATE(data, function(respData) {
                 res.status(respData.status).json(respData.data);
             });
