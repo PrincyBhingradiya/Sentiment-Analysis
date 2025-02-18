@@ -11,7 +11,7 @@ const scheduleSchema = new mongoose.Schema({
     default: "It's time to recognize or scan your face!"
   },
   date: {
-    type: Date,
+    type: String,
     required: true
   },
   time: {
