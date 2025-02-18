@@ -4,26 +4,25 @@ const sendNotification = require('../utils/sendNotification');
 	 
 module.exports = {
 	SCHEDULE_CREATE: async function (data, callback) {
-		const { userId , date, time } = data; 
+		const { userId, date, time } = data; 
 	
 		try {
-			const newDate = new Date(`${date} ${time}`);
-            const newSchedule = new Schedule({ userId, date: newDate, time: time });
-			await newSchedule.save();
+            const newSchedule = new Schedule({ userId, date, time });
+            await newSchedule.save();
 
-			            // Use createdAt for scheduling
-						const scheduledTime = newSchedule.date;
-						const delay = scheduledTime.getTime() - Date.now();
-			
-						if (delay > 0) {
-							setTimeout(async () => {
-								const user = await User.findById(userId);
-								if (user && user.fcmToken) {
-									await sendNotification(user.fcmToken, "Scheduled Alert", "Your scheduled event is due now!");
-									console.log(`Notification sent to user ${userId}`);
-								}
-							}, delay);
-						}
+            const scheduledTime = new Date(`${date}T${time}`); // Convert to a valid Date object only for scheduling
+
+            const delay = scheduledTime.getTime() - Date.now();
+	
+			if (delay > 0) {
+				setTimeout(async () => {
+					const user = await User.findById(userId);
+					if (user && user.fcmToken) {
+						await sendNotification(user.fcmToken, "Scheduled Alert", "Your scheduled event is due now!");
+						console.log(`Notification sent to user ${userId}`);
+					}
+				}, delay);
+			}
 	
 			callback({
 				status: 201,
@@ -38,6 +37,7 @@ module.exports = {
 			});
 		}
 	},
+	
 
 	SCHEDULE_UPDATE: async function(data, callback) {
 		const { scheduleId, date, time } = data;
