@@ -18,9 +18,15 @@ module.exports = {
 	        const newUser = new User({ name, email: email.toLowerCase(), password: hashedPassword, type: type || "user" });
 	        await newUser.save(); 
 
+			const token = jwt.sign(
+                { email: newUser.email, _id: newUser._id },
+                JWT_SECRET,
+                { expiresIn: "3h"} 
+            );
+
 	        var sendData = {
 	        	status: 201,
-	        	data: { success: true, message: 'User registered successfully.' }
+	        	data: { success: true, message: 'User registered successfully.',token }
 	        };
 	        callback(sendData);
 			return;
@@ -46,7 +52,6 @@ module.exports = {
 		        callback(sendData);
 				return;
 	        }
-	        console.log("User found:", user);
 
 	        const isPasswordValid = await bcrypt.compare(password, user.password);
 	        
@@ -58,7 +63,7 @@ module.exports = {
 		        callback(sendData);
 				return;
 	        }
-			let tokenOptions = keepMeSignedIn ? { expiresIn: '30d' } : {};
+			let tokenOptions = keepMeSignedIn ? { expiresIn: '30d' } : { expiresIn: "3h" };
         const token = jwt.sign(
             { email: user.email, _id: user._id },
             JWT_SECRET,
