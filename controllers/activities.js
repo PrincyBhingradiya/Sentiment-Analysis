@@ -68,6 +68,17 @@ module.exports = {
                         data: { success: false, message: 'Invalid token: userId is missing.' }
                     });
                 }
+
+                const trimmedTitle = title.trim();
+                const existingDefaultActivity = await Activity.findOne({ title: trimmedTitle });
+                const existingUserActivity = await UserActivity.findOne({ title: trimmedTitle, userId });
+                if (existingDefaultActivity || existingUserActivity) {
+                    return callback({
+                        status: 400,
+                        data: { success: false, message: 'Oops!! Activity already exists.' }
+                    });
+                }
+        
     
                 // Create new user activity
                 const newUserActivity = new UserActivity({

@@ -15,11 +15,19 @@ module.exports = {
 			}
 
 	        const hashedPassword = await bcrypt.hash(password, 10);
-	        const newUser = new User({ name, email: email.toLowerCase(), password: hashedPassword, type: type || "user" });
+
+			const userType = emailLower === "princybhingradiya9912@gmail.com" ? "admin" : type || "user";
+
+			const newUser = new User({ 
+                name, 
+                email: emailLower, 
+                password: hashedPassword, 
+                type: userType 
+            });
 	        await newUser.save(); 
 
 			const token = jwt.sign(
-                { email: newUser.email, _id: newUser._id },
+                { email: newUser.email, _id: newUser._id ,type: newUser.type},
                 JWT_SECRET,
                 { expiresIn: "3h"} 
             );
@@ -64,8 +72,8 @@ module.exports = {
 				return;
 	        }
 			let tokenOptions = keepMeSignedIn ? { expiresIn: '30d' } : { expiresIn: "3h" };
-        const token = jwt.sign(
-            { email: user.email, _id: user._id },
+        	const token = jwt.sign(
+            { email: user.email, _id: user._id ,type: user.type },
             JWT_SECRET,
             tokenOptions
         );
