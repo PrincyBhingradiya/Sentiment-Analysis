@@ -3,99 +3,119 @@ const forgotPassword = require('../models/forgot');
 
 module.exports = {
 	REGISTER: async function(data, callback) {
-		const { name, email, password,type } = data;
+		const { name, email, password, type, googleId } = data;
 		try {
-	        const emailLower = email.toLowerCase();
-	        const existingUser = await User.findOne({ email: emailLower }); 
-	        if (existingUser) {
-				var sendData = {
-					status: 400,
-					data: { success: true, message: 'User already exist.' }
-				};
+			const emailLower = email.toLowerCase();
+			const existingUser = await User.findOne({ email: emailLower });
+	
+			if (existingUser) {
+				if (googleId && existingUser.googleId !== googleId) {
+					return callback({
+						status: 400,
+						data: { success: false, message: 'Email already registered with a different method.' }
+					});
+				}
+				// If user exists and Google ID is present, allow login
+				const token = jwt.sign(
+					{ email: existingUser.email, _id: existingUser._id, type: existingUser.type },
+					JWT_SECRET,
+					{ expiresIn: "3h" }
+				);
+				return callback({
+					status: 200,
+					data: { success: true, message: 'User logged in successfully.', token }
+				});
 			}
-
-	        const hashedPassword = await bcrypt.hash(password, 10);
-
+	
+			// If using Google Sign-In, no password is required
+			let hashedPassword = password ? await bcrypt.hash(password, 10) : null;
 			const userType = emailLower === "princybhingradiya9912@gmail.com" ? "admin" : type || "user";
-
-			const newUser = new User({ 
-                name, 
-                email: emailLower, 
-                password: hashedPassword, 
-                type: userType 
-            });
-	        await newUser.save(); 
-
+	
+			const newUser = new User({
+				name,
+				email: emailLower,
+				password: hashedPassword,
+				type: userType,
+				googleId: googleId || null
+			});
+	
+			await newUser.save();
+	
 			const token = jwt.sign(
-                { email: newUser.email, _id: newUser._id ,type: newUser.type},
-                JWT_SECRET,
-                { expiresIn: "3h"} 
-            );
-
-	        var sendData = {
-	        	status: 201,
-	        	data: { success: true, message: 'User registered successfully.',token }
-	        };
-	        callback(sendData);
-			return;
-	    } catch (error) {
-	    	var sendData = {
-	        	status: 500,
-	        	data: { success: false, message: 'Server error.', error: error.message }
-	        };
-	        console.error("Signup error:", error);
-	        callback(sendData);
-	    }
+				{ email: newUser.email, _id: newUser._id, type: newUser.type },
+				JWT_SECRET,
+				{ expiresIn: "3h" }
+			);
+	
+			return callback({
+				status: 201,
+				data: { success: true, message: 'User registered successfully.', token }
+			});
+	
+		} catch (error) {
+			console.error("Signup error:", error);
+			return callback({
+				status: 500,
+				data: { success: false, message: 'Server error.', error: error.message }
+			});
+		}
 	},
+	
 	LOGIN: async function(data, callback) {
-		const { email, password,keepMeSignedIn } = data;
+		const { email, password, googleId, keepMeSignedIn } = data;
 		try {
-	        const emailLower = email.toLowerCase();
-	        const user = await User.findOne({ email: emailLower }); 
-	        if (!user) {
-	        	var sendData = {
-		        	status: 404,
-		        	data: { success: false, message: 'User not found.' }
-		        };
-		        callback(sendData);
-				return;
-	        }
-
-	        const isPasswordValid = await bcrypt.compare(password, user.password);
-	        
-	        if (!isPasswordValid) {
-	            var sendData = {
-		        	status: 401,
-		        	data: { success: false, message: 'Invalid credentials.' }
-		        };
-		        callback(sendData);
-				return;
-	        }
+			const emailLower = email.toLowerCase();
+			const user = await User.findOne({ email: emailLower });
+	
+			if (!user) {
+				return callback({
+					status: 404,
+					data: { success: false, message: 'User not found.' }
+				});
+			}
+	
+			if (googleId) {
+				if (user.googleId !== googleId) {
+					return callback({
+						status: 400,
+						data: { success: false, message: 'Google account mismatch. Try logging in with password.' }
+					});
+				}
+			} else {
+				const isPasswordValid = await bcrypt.compare(password, user.password);
+				if (!isPasswordValid) {
+					return callback({
+						status: 401,
+						data: { success: false, message: 'Invalid credentials.' }
+					});
+				}
+			}
+	
 			let tokenOptions = keepMeSignedIn ? { expiresIn: '30d' } : { expiresIn: "3h" };
-        	const token = jwt.sign(
-            { email: user.email, _id: user._id ,type: user.type },
-            JWT_SECRET,
-            tokenOptions
-        );
-
-		let welcomeMessage = user.type === "admin" 
-            ? "Welcome Admin" 
-            : `Welcome ${user.email}`;
-	        
-	        var sendData = {
-	        	status: 200,
-	        	data: { success: true,welcomeMessage:welcomeMessage, message: 'Login successful.', token }
-	        };
-	        callback(sendData);
-	    } catch (error) {
-	        var sendData = {
-	        	status: 500,
-	        	data: { success: false, message: 'Server error.', error: error.message }
-	        };
-	        console.error("Signup error:", error);
-	        callback(sendData);
-	    }
+			const token = jwt.sign(
+				{ email: user.email, _id: user._id, type: user.type },
+				JWT_SECRET,
+				tokenOptions
+			);
+	
+			let welcomeMessage = user.type === "admin"
+				? "Welcome Admin"
+				: `Welcome ${user.email}`;
+	
+			return callback({
+				status: 200,
+				data: { success: true, welcomeMessage: welcomeMessage, message: 'Login successful.', token }
+			});
+	
+		} catch (error) {
+			console.error("Login error:", error);
+			return callback({
+				status: 500,
+				data: { success: false, message: 'Server error.', error: error.message }
+			});
+		}
 	},
+	
 	FORGOT:async function(data, callback) {
 			const { email } = data;
 		try {

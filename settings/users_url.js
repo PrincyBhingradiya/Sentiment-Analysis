@@ -55,6 +55,10 @@ module.exports = {
 	    		res.status(respData.status).json(respData.data);
 	    	});
 	    });
+
+		//google auth(signup & signin)
+		app.post("/google", googleAuth);
+
 		app.post("/forgot",function(req,res){
 			const { email } = req.body;
 			if (!email) {

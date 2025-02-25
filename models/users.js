@@ -16,6 +16,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 6,
   },
+  googleId: {
+    type: String,
+    unique: true, // Ensures no duplicate Google accounts
+    sparse: true, // Allows users without Google Sign-In
+  },
   type: {
     type: String,
     enum:['user','admin'],
