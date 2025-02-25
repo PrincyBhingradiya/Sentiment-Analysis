@@ -9,15 +9,15 @@ module.exports = {
 			const existingUser = await User.findOne({ email: emailLower });
 	
 			if (existingUser) {
-				if (googleId && existingUser.googleId !== googleId) {
+				if (googleId && user.googleId !== googleId) {
 					return callback({
 						status: 400,
 						data: { success: false, message: 'Email already registered with a different method.' }
 					});
 				}
-				// If user exists and Google ID is present, allow login
+				//jwt-Google Token
 				const token = jwt.sign(
-					{ email: existingUser.email, _id: existingUser._id, type: existingUser.type },
+					{ email: user.email, _id: user._id, type: user.type, googleId: user.googleId || null},
 					JWT_SECRET,
 					{ expiresIn: "3h" }
 				);
@@ -40,9 +40,9 @@ module.exports = {
 			});
 	
 			await newUser.save();
-	
+			//jwt token-manual registration
 			const token = jwt.sign(
-				{ email: newUser.email, _id: newUser._id, type: newUser.type },
+				{ email: newUser.email, _id: newUser._id, type: newUser.type,  googleId: newUser.googleId || null },
 				JWT_SECRET,
 				{ expiresIn: "3h" }
 			);
@@ -74,6 +74,8 @@ module.exports = {
 				});
 			}
 	
+			let tokenOptions = keepMeSignedIn ? { expiresIn: '30d' } : { expiresIn: "3h" };
+	
 			if (googleId) {
 				if (user.googleId !== googleId) {
 					return callback({
@@ -81,6 +83,19 @@ module.exports = {
 						data: { success: false, message: 'Google account mismatch. Try logging in with password.' }
 					});
 				}
+	
+				// JWT token - Google login
+				const token = jwt.sign(
+					{ email: user.email, _id: user._id, type: user.type, googleId: user.googleId  },
+					JWT_SECRET,
+					tokenOptions
+				);
+	
+				return callback({
+					status: 200,
+					data: { success: true, message: 'Login successful (Google).', token }
+				});
+	
 			} else {
 				const isPasswordValid = await bcrypt.compare(password, user.password);
 				if (!isPasswordValid) {
@@ -89,24 +104,19 @@ module.exports = {
 						data: { success: false, message: 'Invalid credentials.' }
 					});
 				}
+	
+				//JWT token - manual login
+				const token = jwt.sign(
+					{ email: user.email, _id: user._id, type: user.type, googleId: user.googleId || null },
+					JWT_SECRET,
+					tokenOptions
+				);
+	
+				return callback({
+					status: 200,
+					data: { success: true, message: 'Login successful.', token }
+				});
 			}
-	
-			let tokenOptions = keepMeSignedIn ? { expiresIn: '30d' } : { expiresIn: "3h" };
-			const token = jwt.sign(
-				{ email: user.email, _id: user._id, type: user.type },
-				JWT_SECRET,
-				tokenOptions
-			);
-	
-			let welcomeMessage = user.type === "admin"
-				? "Welcome Admin"
-				: `Welcome ${user.email}`;
-	
-			return callback({
-				status: 200,
-				data: { success: true, welcomeMessage: welcomeMessage, message: 'Login successful.', token }
-			});
-	
 		} catch (error) {
 			console.error("Login error:", error);
 			return callback({

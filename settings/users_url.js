@@ -1,18 +1,9 @@
-const authenticate = require('../middleware/authenticate'); 
+const authenticate = require('../middleware/authenticate');
+const { googleAuth } = require('../controllers/authController');
 
 module.exports = {
 	BindUrl: function () {
-		// app.post('/update-fcm-token', authenticate, async (req, res) => {
-		// 	const { fcmToken } = req.body;
-		// 	const userId = req.user._id;
-		
-		// 	try {
-		// 		await User.findByIdAndUpdate(userId, { fcmToken });
-		// 		res.json({ success: true, message: 'FCM Token updated successfully' });
-		// 	} catch (error) {
-		// 		res.status(500).json({ success: false, message: 'Server error', error: error.message });
-		// 	}
-		// });
+	
 		
 	    app.post("/signup", function (req, res) {
 	    	const { name, email, password,type } = req.body;
@@ -57,8 +48,15 @@ module.exports = {
 	    });
 
 		//google auth(signup & signin)
-		app.post("/google", googleAuth);
+		app.post("/google", function(req, res) {
+			var data = req.body;
+			googleAuth(data, function(respData) {
+				res.send(respData);
+			});
+		});
+		
 
+		
 		app.post("/forgot",function(req,res){
 			const { email } = req.body;
 			if (!email) {
@@ -146,3 +144,14 @@ module.exports = {
 	}
 }
 
+	// app.post('/update-fcm-token', authenticate, async (req, res) => {
+		// 	const { fcmToken } = req.body;
+		// 	const userId = req.user._id;
+		
+		// 	try {
+		// 		await User.findByIdAndUpdate(userId, { fcmToken });
+		// 		res.json({ success: true, message: 'FCM Token updated successfully' });
+		// 	} catch (error) {
+		// 		res.status(500).json({ success: false, message: 'Server error', error: error.message });
+		// 	}
+		// });
