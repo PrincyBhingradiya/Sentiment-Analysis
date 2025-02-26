@@ -9,6 +9,8 @@ const serverless = require('serverless-http')
 module.exports = serverless(app);
 cron = require('node-cron');
 mongoose = module.exports = require('mongoose');
+const cors = require("cors");
+const notificationRoutes = require("./settings/notificationRoutes");
 
 const clientId = process.env.GOOGLE_CLIENT_ID;
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -18,13 +20,22 @@ const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 //body parser
 var bodyParser = require('body-parser');
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 require("dotenv").config();
+app.use(express.json());
+const userRoutes = require("./settings/users_url");
+
+
 
 
 console.log(process.env.MONGO_URL);
 mongoose.connect(process.env.MONGO_URL).then(() => console.log('Connected!'));
 JWT_SECRET = module.exports = process.env.JWT_SECRET;
+
+// app.use("/api", notificationRoutes);
+const authRoutes = require("./middleware/authenticate"); // Example route file
+app.use("/google", authRoutes); 
+
 
 //required all setting files
 require("./settings/url_setting.js");

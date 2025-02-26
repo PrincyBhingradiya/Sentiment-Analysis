@@ -1,6 +1,6 @@
 const Schedule = require('../models/schedules');
 const User = require('../models/users'); 
-const sendNotification = require('../utils/sendNotification');
+// const sendNotification = require('../utils/sendNotification');
 	 
 module.exports = {
 	SCHEDULE_CREATE: async function (data, callback) {

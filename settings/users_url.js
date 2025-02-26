@@ -1,5 +1,8 @@
+const express = require("express");
+const router = express.Router();
 const authenticate = require('../middleware/authenticate');
 const { googleAuth } = require('../controllers/authController');
+
 
 module.exports = {
 	BindUrl: function () {
@@ -49,6 +52,7 @@ module.exports = {
 
 		//google auth(signup & signin)
 		app.post("/google", function(req, res) {
+			
 			var data = req.body;
 			googleAuth(data, function(respData) {
 				res.send(respData);

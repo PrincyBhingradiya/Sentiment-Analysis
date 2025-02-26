@@ -125,7 +125,16 @@ module.exports = {
 			});
 		}
 	},
+	googleAuth:async (data, callback) => {
+		console.log("Received Data:", data); // ✅ Log the incoming data
 	
+		const { idToken } = data;
+		
+		if (!idToken) {
+			return callback({ success: false, message: "Token is required." });
+		}
+	},
+
 	FORGOT:async function(data, callback) {
 			const { email } = data;
 		try {
