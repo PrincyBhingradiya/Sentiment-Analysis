@@ -26,8 +26,6 @@ app.use(express.json());
 const userRoutes = require("./settings/users_url");
 
 
-
-
 console.log(process.env.MONGO_URL);
 mongoose.connect(process.env.MONGO_URL).then(() => console.log('Connected!'));
 JWT_SECRET = module.exports = process.env.JWT_SECRET;
@@ -49,8 +47,6 @@ app.listen(port, () => {
 	console.log(`Success ${port}`);
 });
 console.log(process.cwd());
-
-
 
 
 //initialize firebase in nodejs

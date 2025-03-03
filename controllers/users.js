@@ -134,6 +134,66 @@ module.exports = {
 			return callback({ success: false, message: "Token is required." });
 		}
 	},
+	GET_ALL_USERS: async function(searchQuery, callback) {
+		try {
+			let filter = {};
+			if (searchQuery) {
+				filter = {
+					$or: [
+						{ name: { $regex: searchQuery, $options: "i" } },  
+						{ email: { $regex: searchQuery, $options: "i" } } 
+					]
+				};
+			}
+	
+			const users = await User.find(filter, { name: 1, email: 1, _id: 0 }); // Only fetch name & email
+	
+			return callback({
+				status: 200,                         
+				data: { success: true, users }
+			});
+	
+		} catch (error) {
+			console.error("Fetch users error:", error);
+			return callback({
+				status: 500,
+				data: { success: false, message: "Server error", error: error.message }
+			});
+		}
+	},
+	
+	SEARCH_USERS: async function(searchQuery, callback) {
+		try {
+			let filter = {
+				$or: [
+					{ name: { $regex: searchQuery, $options: "i" } },  // Case-insensitive name search
+					{ email: { $regex: searchQuery, $options: "i" } } // Case-insensitive email search
+				]
+			};
+	
+			const users = await User.find(filter, { password: 0 }); // Exclude passwords for security
+	
+			if (users.length === 0) {
+				return callback({
+					status: 404,
+					data: { success: false, message: "Sorry! User not found." }
+				});
+			}
+	
+			return callback({
+				status: 200,
+				data: { success: true, users }
+			});
+	
+		} catch (error) {
+			console.error("Search users error:", error);
+			return callback({
+				status: 500,
+				data: { success: false, message: "Server error", error: error.message }
+			});
+		}
+	},
+	
 
 	FORGOT:async function(data, callback) {
 			const { email } = data;

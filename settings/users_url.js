@@ -59,7 +59,27 @@ module.exports = {
 			});
 		});
 		
-
+		app.get("/all-users", function (req, res) {
+			const searchQuery = req.query.search || "";
+		
+			usersController.GET_ALL_USERS(searchQuery, function(respData) {
+				res.status(respData.status).json(respData.data);
+			});
+		});		
+		
+		app.post("/search-users", function (req, res) {
+			const { search } = req.body;  // Read search term from request body
+		
+			if (!search || search.trim() === "") {
+				return res.status(400).json({ success: false, message: "Search query is required." });
+			}
+		
+			usersController.SEARCH_USERS(search, function(respData) {
+				res.status(respData.status).json(respData.data);
+			});
+		});
+		
+			
 		
 		app.post("/forgot",function(req,res){
 			const { email } = req.body;

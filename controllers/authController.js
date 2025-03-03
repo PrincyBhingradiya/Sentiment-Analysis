@@ -10,7 +10,7 @@ module.exports.googleAuth = async (data, callback) => {
         const { idToken } = data;
 
         if (!idToken) {
-            return callback({ success: false, message: "Token is required." }); // ❌ Fix: Use callback instead of res.status
+            return callback({ success: false, message: "Token is required." }); 
         }
     
             const ticket = await client.verifyIdToken({
