@@ -59,5 +59,16 @@ module.exports = {
                 res.status(respData.status).json(respData.data);
             });
         });
+        app.post("/user/update-fcm-token", authenticate, async (req, res) => {
+            const { fcmToken } = req.body;
+            if (!fcmToken) return res.status(400).json({ success: false, message: "FCM Token is required" });
+        
+            try {
+                await User.updateOne({ _id: req.user._id }, { fcmToken });
+                res.status(200).json({ success: true, message: "FCM Token updated successfully" });
+            } catch (error) {
+                res.status(500).json({ success: false, message: "Server error", error: error.message });
+            }
+        });        
         }
 }

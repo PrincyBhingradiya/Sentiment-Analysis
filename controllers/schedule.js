@@ -1,6 +1,25 @@
 const Schedule = require('../models/schedules');
 const User = require('../models/users'); 
-// const sendNotification = require('../utils/sendNotification');
+const sendNotification = require('../utils/sendNotification');
+const cron = require('node-cron');
+const mongoose = require("mongoose");
+
+cron.schedule('* * * * *', async () => {
+	console.log('🔔 Checking scheduled notifications...');
+
+	const now = new Date();
+	const formattedDate = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
+	const formattedTime = now.toTimeString().slice(0, 5); // Format HH:mm
+
+	const schedules = await Schedule.find({ date: formattedDate, time: formattedTime, notificationSent: false });
+
+	for (const schedule of schedules) {
+		await sendNotification(schedule.userId, "Scheduled Alert", "It's time to analyze your mood in the app!");
+		await Schedule.updateOne({ _id: schedule._id }, { notificationSent: true });
+		console.log(`✅ Notification sent for schedule ID: ${schedule._id}`);
+	}
+}),
+
 	 
 module.exports = {
 	SCHEDULE_CREATE: async function (data, callback) {
@@ -125,67 +144,8 @@ module.exports = {
 				data: { success: false, message: "Server error while deleting schedule.", error: error.message }
 			});
 		}
-	}
-	};
-	// cron.schedule('* * * * *', async () => {
-	// 	console.log('Checking for scheduled notifications...');
-	// 	const schedules = await Schedule.find();
-		
-	// 	schedules.forEach(schedule => {
-	// 		const scheduledTime = schedule.createdAt;
-	// 		const delay = scheduledTime.getTime() - Date.now();
+	},
 	
-	// 		if (delay > 0) {
-	// 			setTimeout(async () => {
-	// 				const user = await User.findById(schedule.userId);
-	// 				if (user && user.fcmToken) {
-	// 					await sendNotification(user.fcmToken, "Scheduled Alert", "Your scheduled event is due now!");
-	// 					console.log(`Notification sent to user ${schedule.userId}`);
-	// 				}
-	// 			}, delay);
-	// 		}
-	// 	});
-	// });
+}
 
-	
-		
-		// SCHEDULE_CREATE: async function (data, callback) {
-		// 	const { userId, date, time } = data;
-		// 	try {
-		// 		// Create a new schedule
-		// 		const newSchedule = new Schedule({ userId, date, time });
-		// 		await newSchedule.save(); 
-				
-		// 		// Calculate the delay until the scheduled time
-		// 		const scheduledTime = new Date(`${date} ${time}`);
-		// 		const delay = scheduledTime.getTime() - Date.now();
-	
-		// 		if (delay > 0) {
-		// 			// Schedule the notification
-		// 			cron.schedule(`*/1 * * * *`, async () => { 
-		// 				const now = new Date();
-		// 				if (now >= scheduledTime) {
-		// 					// Send notification if current time matches or exceeds the scheduled time
-		// 					await sendNotification(userId);
-		// 					console.log(`Notification sent to user ${userId}`);
-		// 				}
-		// 			});
-		// 		}
-	
-		// 		var sendData = {
-		// 			status: 201,
-		// 			data: { success: true, message: 'Schedule created successfully.' }
-		// 		};
-		// 		callback(sendData);
-		// 		return;
-		// 	} catch (error) {
-		// 		var sendData = {
-		// 			status: 500,
-		// 			data: { success: false, message: 'Server error while creating schedule.', error: error.message }
-		// 		};
-		// 		console.error("Error creating schedule:", error);
-		// 		callback(sendData);
-		// 		return;
-		// 	}
-		// },
  

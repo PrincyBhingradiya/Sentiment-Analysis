@@ -6,8 +6,6 @@ const { googleAuth } = require('../controllers/authController');
 
 module.exports = {
 	BindUrl: function () {
-	
-		
 	    app.post("/signup", function (req, res) {
 	    	const { name, email, password,type } = req.body;
 
@@ -79,8 +77,6 @@ module.exports = {
 			});
 		});
 		
-			
-		
 		app.post("/forgot",function(req,res){
 			const { email } = req.body;
 			if (!email) {
@@ -92,7 +88,8 @@ module.exports = {
 				res.status(respData.status).json(respData.data);
 			});
 		});
-		app.post("/reset", function (req, res) {
+		
+	app.post("/reset", function (req, res) {
     const { email, otp, newPassword } = req.body;
 
     if (!email || !otp || !newPassword) {
@@ -109,7 +106,8 @@ module.exports = {
         res.status(respData.status).json(respData.data);
     });
 		});
-		app.post("/logout", function (req, res) {
+
+	app.post("/logout", function (req, res) {
 		const token  = req.headers['authorization'];
 	
 		if (!token) {

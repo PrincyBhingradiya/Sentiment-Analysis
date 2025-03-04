@@ -125,15 +125,15 @@ module.exports = {
 			});
 		}
 	},
+
 	googleAuth:async (data, callback) => {
-		console.log("Received Data:", data); // ✅ Log the incoming data
-	
+		console.log("Received Data:", data); 
 		const { idToken } = data;
-		
 		if (!idToken) {
 			return callback({ success: false, message: "Token is required." });
 		}
 	},
+	
 	GET_ALL_USERS: async function(searchQuery, callback) {
 		try {
 			let filter = {};
@@ -193,7 +193,6 @@ module.exports = {
 			});
 		}
 	},
-	
 
 	FORGOT:async function(data, callback) {
 			const { email } = data;
@@ -259,6 +258,7 @@ module.exports = {
 			return;
 	    }
 	},
+
 	RESET: async function(data, callback) {
 		const { email, otp, newPassword } = data;
 	
@@ -307,6 +307,7 @@ module.exports = {
 			return;
 		}
 	},
+
 	LOGOUT: async function(data, callback) {
 		try {
 			const { token } = data;	
@@ -326,6 +327,7 @@ module.exports = {
 			return;
 		}
 	},
+
 	EDIT_PROFILE: async function(data, callback) {
 		const { userId, newname, newEmail } = data;
 		try {
@@ -364,6 +366,7 @@ module.exports = {
 			});
 		}
 	},	
+	
 	CHANGE_PASSWORD: async function(data, callback) {
 		const { userId, oldPassword, newPassword } = data;
 	

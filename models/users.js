@@ -31,10 +31,10 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  // fcmToken: {
-  //   type: String,
-  //   required: true
-  // },
+  fcmToken: {
+    type: String,
+    required: true
+  },
 });
 
 const User = mongoose.model('User', userSchema);

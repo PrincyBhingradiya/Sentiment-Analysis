@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "334256627763",
+    "project_id": "mood-demo-be553",
+    "storage_bucket": "mood-demo-be553.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:334256627763:android:3e40eb08d439fca667c346",
+        "android_client_info": {
+          "package_name": "com.example.mood_demo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "334256627763-kh66phbh6tl3kq4ru30ultj00d6a2uog.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mood_demo",
+            "certificate_hash": "816628f3a3bfa5fb0df6ea0add25f32fde72949a"
+          }
+        },
+        {
+          "client_id": "334256627763-dnm4n1e5eaca8fchap6dbjjg2vhj515v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYX2MAamqPnZlcZIOyEG0uWFFHxbTsvwg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "334256627763-dnm4n1e5eaca8fchap6dbjjg2vhj515v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
