@@ -7,7 +7,7 @@ const { googleAuth } = require('../controllers/authController');
 module.exports = {
 	BindUrl: function () {
 	    app.post("/signup", function (req, res) {
-	    	const { name, email, password,type } = req.body;
+	    	const { name, email, password,type, googleId } = req.body;
 
 			const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 			const validatePassword = (password) => password.length >= 8;
@@ -22,14 +22,14 @@ module.exports = {
 		        return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
 		    }
 
-		    var data = req.body;
+			var data = { name, email, password, type, googleId };
 			usersController.REGISTER(data, function(respData) {
 	    		res.status(respData.status).json(respData.data);
 	    	});
 	    });
 
 	    app.post("/login", function (req, res) {
-	    	const { email, password ,keepMeSignedIn} = req.body;
+	    	const { email, password ,keepMeSignedIn, action, targetEmail  } = req.body;
 
 			const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 			
@@ -42,7 +42,7 @@ module.exports = {
 		        return res.status(400).json({ success: false, message: 'Invalid email format.' });
 		    }
 
-			var data = { email, password, keepMeSignedIn };
+			var data = { email, password, keepMeSignedIn, action,targetEmail  };
 			usersController.LOGIN(data, function(respData) {
 	    		res.status(respData.status).json(respData.data);
 	    	});

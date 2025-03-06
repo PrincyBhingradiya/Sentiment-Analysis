@@ -27,14 +27,19 @@ const userSchema = new mongoose.Schema({
     default: 'user',
     required: true,
   },
+  isBlocked: {
+    type: Boolean,
+    default: false, 
+  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
   fcmToken: {
     type: String,
-    required: true
+    required: false
   },
+  
 });
 
 const User = mongoose.model('User', userSchema);

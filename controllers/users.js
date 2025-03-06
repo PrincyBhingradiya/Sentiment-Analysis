@@ -2,32 +2,26 @@ const User = require('../models/users');
 const forgotPassword = require('../models/forgot');
 
 module.exports = {
-	REGISTER: async function(data, callback) {
+	REGISTER: async function (data, callback) {
 		const { name, email, password, type, googleId } = data;
+	
 		try {
 			const emailLower = email.toLowerCase();
 			const existingUser = await User.findOne({ email: emailLower });
 	
 			if (existingUser) {
-				if (googleId && user.googleId !== googleId) {
+				if (existingUser.isBlocked) {
 					return callback({
-						status: 400,
-						data: { success: false, message: 'Email already registered with a different method.' }
+						status: 403,
+						data: { success: false, message: "This account is blocked. Contact admin for assistance." }
 					});
 				}
-				//jwt-Google Token
-				const token = jwt.sign(
-					{ email: user.email, _id: user._id, type: user.type, googleId: user.googleId || null},
-					JWT_SECRET,
-					{ expiresIn: "3h" }
-				);
 				return callback({
-					status: 200,
-					data: { success: true, message: 'User logged in successfully.', token }
+					status: 400,
+					data: { success: false, message: "Email already registered." }
 				});
 			}
 	
-			// If using Google Sign-In, no password is required
 			let hashedPassword = password ? await bcrypt.hash(password, 10) : null;
 			const userType = emailLower === "princybhingradiya9912@gmail.com" ? "admin" : type || "user";
 	
@@ -36,33 +30,34 @@ module.exports = {
 				email: emailLower,
 				password: hashedPassword,
 				type: userType,
-				googleId: googleId || null
+				googleId: googleId || null,
+				isBlocked: false
 			});
 	
 			await newUser.save();
-			//jwt token-manual registration
+	
 			const token = jwt.sign(
-				{ email: newUser.email, _id: newUser._id, type: newUser.type,  googleId: newUser.googleId || null },
+				{ email: newUser.email, _id: newUser._id, type: newUser.type, googleId: newUser.googleId || null },
 				JWT_SECRET,
 				{ expiresIn: "3h" }
 			);
 	
 			return callback({
 				status: 201,
-				data: { success: true, message: 'User registered successfully.', token }
+				data: { success: true, message: "User registered successfully.", token }
 			});
 	
 		} catch (error) {
 			console.error("Signup error:", error);
 			return callback({
 				status: 500,
-				data: { success: false, message: 'Server error.', error: error.message }
+				data: { success: false, message: "Server error.", error: error.message }
 			});
 		}
 	},
 	
-	LOGIN: async function(data, callback) {
-		const { email, password, googleId, keepMeSignedIn } = data;
+	LOGIN: async function (data, callback) {
+		const { email, password, googleId, keepMeSignedIn, action,targetEmail  } = data;
 		try {
 			const emailLower = email.toLowerCase();
 			const user = await User.findOne({ email: emailLower });
@@ -70,61 +65,115 @@ module.exports = {
 			if (!user) {
 				return callback({
 					status: 404,
-					data: { success: false, message: 'User not found.' }
+					data: { success: false, message: "User not found." }
+				});
+			}
+			if (action) {
+				if (user.type !== "admin") {
+					return callback({
+						status: 403,
+						data: { success: false, message: "Only admins can perform this action." }
+					});
+				}
+			
+				if (!targetEmail) {
+					return callback({
+						status: 400,
+						data: { success: false, message: "Target user email is required." }
+					});
+				}
+			
+				const targetUser = await User.findOne({ email: targetEmail.toLowerCase() });
+			
+				if (!targetUser) {
+					return callback({
+						status: 404,
+						data: { success: false, message: "Target user not found." }
+					});
+				}
+			
+				if (action === "block") {
+					targetUser.isBlocked = true;
+					await targetUser.save();
+					return callback({
+						status: 200,
+						data: { success: true, message: `${targetUser.email} has been blocked.` }
+					});
+				}
+			
+				if (action === "unblock") {
+					targetUser.isBlocked = false;
+					await targetUser.save();
+					return callback({
+						status: 200,
+						data: { success: true, message: `${targetUser.email} has been unblocked.` }
+					});
+				}
+			
+				if (action === "delete") {
+					await targetUser.deleteOne();
+					return callback({
+						status: 200,
+						data: { success: true, message: `${targetUser.email} has been deleted.` }
+					});
+				}
+			
+				return callback({
+					status: 400,
+					data: { success: false, message: "Invalid action." }
+				});
+			}
+			
+			
+			if (user.isBlocked) {
+				return callback({
+					status: 403,
+					data: { success: false, message: "Your account is blocked. Contact admin." }
 				});
 			}
 	
-			let tokenOptions = keepMeSignedIn ? { expiresIn: '30d' } : { expiresIn: "3h" };
+			let tokenOptions = keepMeSignedIn ? { expiresIn: "30d" } : { expiresIn: "3h" };
 	
 			if (googleId) {
 				if (user.googleId !== googleId) {
 					return callback({
 						status: 400,
-						data: { success: false, message: 'Google account mismatch. Try logging in with password.' }
+						data: { success: false, message: "Google account mismatch. Try logging in with password." }
 					});
 				}
-	
-				// JWT token - Google login
-				const token = jwt.sign(
-					{ email: user.email, _id: user._id, type: user.type, googleId: user.googleId  },
-					JWT_SECRET,
-					tokenOptions
-				);
-	
-				return callback({
-					status: 200,
-					data: { success: true, message: 'Login successful (Google).', token }
-				});
-	
 			} else {
 				const isPasswordValid = await bcrypt.compare(password, user.password);
 				if (!isPasswordValid) {
 					return callback({
 						status: 401,
-						data: { success: false, message: 'Invalid credentials.' }
+						data: { success: false, message: "Invalid credentials." }
 					});
 				}
-	
-				//JWT token - manual login
-				const token = jwt.sign(
-					{ email: user.email, _id: user._id, type: user.type, googleId: user.googleId || null },
-					JWT_SECRET,
-					tokenOptions
-				);
-	
-				return callback({
-					status: 200,
-					data: { success: true, message: 'Login successful.', token }
-				});
 			}
+	
+			// JWT Token both manual & Google login
+			const token = jwt.sign(
+				{ email: user.email, _id: user._id, type: user.type, googleId: user.googleId || null },
+				JWT_SECRET,
+				tokenOptions
+			);
+	
+			// welcome msg for user and admin
+			const welcomeMessage = user.type === "admin" ? "Welcome, Admin!" : `Welcome, ${user.email}!`;
+	
+			return callback({
+				status: 200,
+				data: { success: true, message: welcomeMessage, token }
+			});
+	
 		} catch (error) {
 			console.error("Login error:", error);
 			return callback({
 				status: 500,
-				data: { success: false, message: 'Server error.', error: error.message }
+				data: { success: false, message: "Server error.", error: error.message }
 			});
 		}
-	},
+	},	
 
 	googleAuth:async (data, callback) => {
 		console.log("Received Data:", data); 
@@ -166,8 +215,8 @@ module.exports = {
 		try {
 			let filter = {
 				$or: [
-					{ name: { $regex: searchQuery, $options: "i" } },  // Case-insensitive name search
-					{ email: { $regex: searchQuery, $options: "i" } } // Case-insensitive email search
+					{ name: { $regex: searchQuery, $options: "i" } },  
+					{ email: { $regex: searchQuery, $options: "i" } } 
 				]
 			};
 	
@@ -197,7 +246,6 @@ module.exports = {
 	FORGOT:async function(data, callback) {
 			const { email } = data;
 		try {
-			// Check if the user exists in the database
 			const user= await User.findOne({ email });
 			if (!user) {
 	        	var sendData = {
@@ -210,7 +258,6 @@ module.exports = {
 	        console.log("User found:", user);
 
 			console.log("process.env.JWT_SECRET", process.env.JWT_SECRET);
-			// generate otp
 			let min = 100000;
 			let max = 999999;
 			let random = Math.floor(Math.random() * (max - min + 1)) + min;
@@ -218,7 +265,6 @@ module.exports = {
 			const newforgotPassword = new forgotPassword({ email: email.toLowerCase(), otp: random });
 	        await newforgotPassword.save(); 
 	
-			// Send reset link via email
 			const message = `Hello there,
 			Your reset password OTP is: ${random}
 			Thank you!`;
@@ -274,10 +320,8 @@ module.exports = {
 				return;
 			}
 	
-			// Update the user's password
 			const hashedPassword = await bcrypt.hash(newPassword, 10);
 			const updatePassword = await User.updateOne({  email: email.toLowerCase()},{ $set: { password: hashedPassword } } );
-			// await updatePassword.save();
 	
 			if (updatePassword.modifiedCount === 0) {
 				var sendData = {
@@ -288,7 +332,6 @@ module.exports = {
 				return;
 			}
 	
-			// Clean up the OTP entry
 			await forgotPassword.deleteOne({ email: email.toLowerCase(), otp });
 	
 			var sendData = {
@@ -331,7 +374,6 @@ module.exports = {
 	EDIT_PROFILE: async function(data, callback) {
 		const { userId, newname, newEmail } = data;
 		try {
-			// Check if the email is already in use by another user
 			const existingUser = await User.findOne({ email: newEmail.toLowerCase() });
 			if (existingUser && existingUser._id.toString() !== userId) {
 				return callback({
@@ -340,7 +382,6 @@ module.exports = {
 				});
 			}
 	
-			// Update user data (username and email)
 			const updatedUser = await User.findByIdAndUpdate(
 				userId,
 				{ name: newname, email: newEmail.toLowerCase() },
@@ -371,7 +412,6 @@ module.exports = {
 		const { userId, oldPassword, newPassword } = data;
 	
 		try {
-			// Find the user by ID
 			const user = await User.findById(userId);
 	
 			if (!user) {
@@ -381,7 +421,6 @@ module.exports = {
 				});
 			}
 	
-			// Compare the old password with the stored password
 			const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
 	
 			if (!isPasswordValid) {
@@ -391,7 +430,6 @@ module.exports = {
 				});
 			}
 	
-			// Hash the new password and update it in the database
 			const hashedPassword = await bcrypt.hash(newPassword, 10);
 			const updatePassword = await User.updateOne({ _id: userId }, { $set: { password: hashedPassword } });
 	
