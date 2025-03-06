@@ -57,7 +57,7 @@ module.exports = {
 	},
 	
 	LOGIN: async function (data, callback) {
-		const { email, password, googleId, keepMeSignedIn, action,targetEmail  } = data;
+		const { email, password, googleId, keepMeSignedIn } = data;
 		try {
 			const emailLower = email.toLowerCase();
 			const user = await User.findOne({ email: emailLower });
@@ -68,62 +68,6 @@ module.exports = {
 					data: { success: false, message: "User not found." }
 				});
 			}
-			if (action) {
-				if (user.type !== "admin") {
-					return callback({
-						status: 403,
-						data: { success: false, message: "Only admins can perform this action." }
-					});
-				}
-			
-				if (!targetEmail) {
-					return callback({
-						status: 400,
-						data: { success: false, message: "Target user email is required." }
-					});
-				}
-			
-				const targetUser = await User.findOne({ email: targetEmail.toLowerCase() });
-			
-				if (!targetUser) {
-					return callback({
-						status: 404,
-						data: { success: false, message: "Target user not found." }
-					});
-				}
-			
-				if (action === "block") {
-					targetUser.isBlocked = true;
-					await targetUser.save();
-					return callback({
-						status: 200,
-						data: { success: true, message: `${targetUser.email} has been blocked.` }
-					});
-				}
-			
-				if (action === "unblock") {
-					targetUser.isBlocked = false;
-					await targetUser.save();
-					return callback({
-						status: 200,
-						data: { success: true, message: `${targetUser.email} has been unblocked.` }
-					});
-				}
-			
-				if (action === "delete") {
-					await targetUser.deleteOne();
-					return callback({
-						status: 200,
-						data: { success: true, message: `${targetUser.email} has been deleted.` }
-					});
-				}
-			
-				return callback({
-					status: 400,
-					data: { success: false, message: "Invalid action." }
-				});
-			}
-			
 			
 			if (user.isBlocked) {
 				return callback({
@@ -168,6 +112,83 @@ module.exports = {
 	
 		} catch (error) {
 			console.error("Login error:", error);
+			return callback({
+				status: 500,
+				data: { success: false, message: "Server error.", error: error.message }
+			});
+		}
+	},	
+	BLOCK_UNBLOCK_USER: async function (data, callback) {
+		const { email, action } = data;
+		try {
+			const emailLower = email.toLowerCase();
+			const user = await User.findOne({ email: emailLower });	
+	
+			const userToModify = await User.findOne({ email: email.toLowerCase() });
+	
+			if (!userToModify) {
+				return callback({
+					status: 404,
+					data: { success: false, message: "User not found." }
+				});
+			}
+	
+			if (action === "block") {
+				userToModify.isBlocked = true;
+				await userToModify.save();
+				return callback({
+					status: 200,
+					data: { success: true, message: `${userToModify.email} has been blocked.` }
+				});
+			}
+	
+			if (action === "unblock") {
+				userToModify.isBlocked = false;
+				await userToModify.save();
+				return callback({
+					status: 200,
+					data: { success: true, message: `${userToModify.email} has been unblocked.` }
+				});
+			}
+	
+			return callback({
+				status: 400,
+				data: { success: false, message: "Invalid action." }
+			});
+	
+		} catch (error) {
+			console.error("Block/Unblock error:", error);
+			return callback({
+				status: 500,
+				data: { success: false, message: "Server error.", error: error.message }
+			});
+		}
+	},
+	
+	DELETE_USER: async function (data, callback) {
+		const { email } = data;
+		try {
+			const emailLower = email.toLowerCase();
+			const user = await User.findOne({ email: emailLower });	
+	
+			const userToDelete = await User.findOne({ email: email.toLowerCase() });
+	
+			if (!userToDelete) {
+				return callback({
+					status: 404,
+					data: { success: false, message: "User not found." }
+				});
+			}
+	
+			await userToDelete.deleteOne();
+	
+			return callback({
+				status: 200,
+				data: { success: true, message: `${userToDelete.email} has been deleted.` }
+			});
+	
+		} catch (error) {
+			console.error("Delete user error:", error);
 			return callback({
 				status: 500,
 				data: { success: false, message: "Server error.", error: error.message }

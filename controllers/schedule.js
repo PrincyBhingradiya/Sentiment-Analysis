@@ -14,7 +14,7 @@ cron.schedule('* * * * *', async () => {
 	const schedules = await Schedule.find({ date: formattedDate, time: formattedTime, notificationSent: false });
 
 	for (const schedule of schedules) {
-		await sendNotification(schedule.userId, "Scheduled Alert", "It's time to analyze your mood in the app!");
+		await sendNotification(schedule.userId, "Scheduled Alert", "Don't forget! Log your mood now to stay on track.");
 		await Schedule.updateOne({ _id: schedule._id }, { notificationSent: true });
 		console.log(`✅ Notification sent for schedule ID: ${schedule._id}`);
 	}

@@ -29,7 +29,7 @@ module.exports = {
 	    });
 
 	    app.post("/login", function (req, res) {
-	    	const { email, password ,keepMeSignedIn, action, targetEmail  } = req.body;
+	    	const { email, password ,keepMeSignedIn } = req.body;
 
 			const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 			
@@ -42,11 +42,46 @@ module.exports = {
 		        return res.status(400).json({ success: false, message: 'Invalid email format.' });
 		    }
 
-			var data = { email, password, keepMeSignedIn, action,targetEmail  };
+			var data = { email, password, keepMeSignedIn };
 			usersController.LOGIN(data, function(respData) {
 	    		res.status(respData.status).json(respData.data);
 	    	});
 	    });
+
+		app.post("/admin/block-unblock", authenticate ,function (req, res) {
+			const { email, action } = req.body;
+		
+			const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+			if (!email || !action ) {
+				return res.status(400).json({ success: false, message: 'Email and action are required.' });
+			}
+			if (!emailRegex.test(email)) {
+				return res.status(400).json({ success: false, message: 'Invalid email format.' });
+			}
+		
+			const data = { email, action };
+			usersController.BLOCK_UNBLOCK_USER(data, function(respData) {
+				res.status(respData.status).json(respData.data);
+			});
+		});
+
+		app.post("/admin/delete-user",authenticate, function (req, res) {
+			const { email } = req.body;
+		
+			const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+			if (!email ) {
+				return res.status(400).json({ success: false, message: 'Email is required.' });
+			}
+			if (!emailRegex.test(email)) {
+				return res.status(400).json({ success: false, message: 'Invalid email format.' });
+			}
+		
+			const data = { email };
+			usersController.DELETE_USER(data, function(respData) {
+				res.status(respData.status).json(respData.data);
+			});
+		});
+		
 
 		//google auth(signup & signin)
 		app.post("/google", function(req, res) {
