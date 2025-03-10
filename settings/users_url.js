@@ -7,7 +7,7 @@ const { googleAuth } = require('../controllers/authController');
 module.exports = {
 	BindUrl: function () {
 	    app.post("/signup", function (req, res) {
-	    	const { name, email, password,type, googleId } = req.body;
+	    	const { name, email, password,type, googleId, fcmToken  } = req.body;
 
 			const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 			const validatePassword = (password) => password.length >= 8;
@@ -22,31 +22,35 @@ module.exports = {
 		        return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
 		    }
 
-			var data = { name, email, password, type, googleId };
+			var data = { name, email, password, type, googleId, fcmToken  };
 			usersController.REGISTER(data, function(respData) {
 	    		res.status(respData.status).json(respData.data);
 	    	});
 	    });
 
-	    app.post("/login", function (req, res) {
-	    	const { email, password ,keepMeSignedIn } = req.body;
-
+	    app.post("/login", async function (req, res) {  // ✅ Mark route handler as async
+			const { email, password, keepMeSignedIn, fcmToken } = req.body;
+		
 			const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-			
 			const validatePassword = (password) => password.length >= 8;
-
-		    if (!email || !password) {
-		        return res.status(400).json({ success: false, message: 'All fields are required.' });
-		    }
-		     if (!emailRegex.test(email)) {
-		        return res.status(400).json({ success: false, message: 'Invalid email format.' });
-		    }
-
-			var data = { email, password, keepMeSignedIn };
-			usersController.LOGIN(data, function(respData) {
-	    		res.status(respData.status).json(respData.data);
-	    	});
-	    });
+		
+			if (!email || !password) {
+				return res.status(400).json({ success: false, message: "All fields are required." });
+			}
+			if (!emailRegex.test(email)) {
+				return res.status(400).json({ success: false, message: "Invalid email format." });
+			}
+		
+			const data = { email, password, keepMeSignedIn, fcmToken }; // ✅ Include fcmToken
+			usersController.LOGIN(data, async function (respData) {
+				if (respData.status === 200 && fcmToken) {
+					// ✅ Call the function to update FCM Token separately
+					await updateFcmToken(email, fcmToken);
+				}
+				res.status(respData.status).json(respData.data);
+			});
+		});
+		
 
 		app.post("/admin/block-unblock", authenticate ,function (req, res) {
 			const { email, action } = req.body;

@@ -1,4 +1,9 @@
 const authenticate = require('../middleware/authenticate'); 
+const userschedule = require('../controllers/schedule');
+const User = require("../models/users"); // Import User model
+const mongoose = require("mongoose");
+const sendNotification = require("../utils/sendNotification");
+
 
 module.exports = {
 	BindUrl: function () {
@@ -59,16 +64,51 @@ module.exports = {
                 res.status(respData.status).json(respData.data);
             });
         });
-        app.post("/user/update-fcm-token", authenticate, async (req, res) => {
-            const { fcmToken } = req.body;
-            if (!fcmToken) return res.status(400).json({ success: false, message: "FCM Token is required" });
-        
-            try {
-                await User.updateOne({ _id: req.user._id }, { fcmToken });
-                res.status(200).json({ success: true, message: "FCM Token updated successfully" });
-            } catch (error) {
-                res.status(500).json({ success: false, message: "Server error", error: error.message });
-            }
-        });        
+      app.post("/user/update-fcm-token", authenticate, async (req, res) => {
+        const { fcmToken } = req.body;
+        if (!fcmToken) return res.status(400).json({ success: false, message: "FCM Token is required" });
+    
+        try {
+            await User.updateOne({ _id: req.user._id }, { fcmToken });
+            res.status(200).json({ success: true, message: "FCM Token updated successfully" });
+        } catch (error) {
+            res.status(500).json({ success: false, message: "Server error", error: error.message });
         }
-}
+    });
+    
+    // app.get("/user/check-fcm",authenticate, async (req, res) => {
+    //     try {
+    //         const user = await User.findById(req.user._id).select("fcmToken");
+    //         if (!user || !user.fcmToken) {
+    //             return res.status(404).json({ success: false, message: "FCM token not found" });
+    //         }
+    //         res.json({ success: true, fcmToken: user.fcmToken });
+    //     } catch (error) {
+    //         res.status(500).json({ success: false, message: "Internal server error" });
+    //     }
+    // });
+
+    app.post("/user/send-notification", authenticate, async (req, res) => {
+        const { title, body } = req.body;
+        if (!title || !body) {
+            return res.status(400).json({ success: false, message: "Title and Body are required." });
+        }
+    
+        try {
+            const user = await User.findById(req.user._id);
+            if (!user || !user.fcmToken) {
+                return res.status(404).json({ success: false, message: "User not found or FCM token missing" });
+            }
+    
+            console.log("Sending notification to:", user.fcmToken);
+    
+            await sendNotification(user.fcmToken, title, body);
+            res.json({ success: true, message: "Notification sent successfully" });
+    
+        } catch (error) {
+            console.error("Error sending notification:", error);
+            res.status(500).json({ success: false, message: "Error sending notification", error: error.message });
+        }
+    });    
+    }
+}    

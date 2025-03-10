@@ -3,7 +3,7 @@ const forgotPassword = require('../models/forgot');
 
 module.exports = {
 	REGISTER: async function (data, callback) {
-		const { name, email, password, type, googleId } = data;
+		const { name, email, password, type, googleId,fcmToken } = data;
 	
 		try {
 			const emailLower = email.toLowerCase();
@@ -31,7 +31,8 @@ module.exports = {
 				password: hashedPassword,
 				type: userType,
 				googleId: googleId || null,
-				isBlocked: false
+				isBlocked: false,
+				fcmToken: fcmToken || null, 
 			});
 	
 			await newUser.save();
@@ -57,7 +58,7 @@ module.exports = {
 	},
 	
 	LOGIN: async function (data, callback) {
-		const { email, password, googleId, keepMeSignedIn } = data;
+		const { email, password, googleId, keepMeSignedIn,fcmToken  } = data;
 		try {
 			const emailLower = email.toLowerCase();
 			const user = await User.findOne({ email: emailLower });
@@ -93,6 +94,11 @@ module.exports = {
 						data: { success: false, message: "Invalid credentials." }
 					});
 				}
+			}
+			 // Update FCM Token if provided
+			 if (fcmToken) {
+				user.fcmToken = fcmToken;
+				await user.save();
 			}
 	
 			// JWT Token both manual & Google login

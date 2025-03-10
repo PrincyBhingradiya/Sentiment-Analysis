@@ -2,10 +2,10 @@ const Schedule = require('../models/schedules');
 const User = require('../models/users'); 
 const sendNotification = require('../utils/sendNotification');
 const cron = require('node-cron');
-const mongoose = require("mongoose");
+// const mongoose = require("mongoose");
 
 cron.schedule('* * * * *', async () => {
-	console.log('🔔 Checking scheduled notifications...');
+	console.log(' Checking scheduled notifications...');
 
 	const now = new Date();
 	const formattedDate = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
@@ -14,62 +14,74 @@ cron.schedule('* * * * *', async () => {
 	const schedules = await Schedule.find({ date: formattedDate, time: formattedTime, notificationSent: false });
 
 	for (const schedule of schedules) {
-		await sendNotification(schedule.userId, "Scheduled Alert", "Don't forget! Log your mood now to stay on track.");
-		await Schedule.updateOne({ _id: schedule._id }, { notificationSent: true });
-		console.log(`✅ Notification sent for schedule ID: ${schedule._id}`);
+		const user = await User.findById(schedule.userId);
+		if (user && user.fcmToken) {
+			const notificationResponse = await sendNotification(user.fcmToken, "Scheduled Alert", "Don't forget! Log your mood now to stay on track.");
+			console.log(` Notification Response:`, notificationResponse);
+			
+			// Update notification status only if sent successfully
+			if (notificationResponse.success) {
+				await Schedule.updateOne({ _id: schedule._id }, { notificationSent: true });
+				console.log(` Notification sent for schedule ID: ${schedule._id}`);
+			}
+		} else {
+			console.log(` No FCM Token found for user ID: ${schedule.userId}`);
+		}
 	}
-}),
+});
 
 	 
 module.exports = {
 	SCHEDULE_CREATE: async function (data, callback) {
-		const { userId, date, time } = data; 
-	
-		try {
+        const { userId, date, time } = data;
+
+        try {
             const newSchedule = new Schedule({ userId, date, time });
             await newSchedule.save();
 
-            const scheduledTime = new Date(`${date}T${time}`); // Convert to a valid Date object only for scheduling
-
+            const scheduledTime = new Date(`${date}T${time}`);
             const delay = scheduledTime.getTime() - Date.now();
-	
-			if (delay > 0) {
-				setTimeout(async () => {
-					const user = await User.findById(userId);
-					if (user && user.fcmToken) {
-						await sendNotification(user.fcmToken, "Scheduled Alert", "Your scheduled event is due now!");
-						console.log(`Notification sent to user ${userId}`);
-					}
-				}, delay);
-			}
-	
-			callback({
-				status: 201,
-				data: { success: true, message: 'Schedule created successfully.', schedule: newSchedule }
-			});
-	
-		} catch (error) {
-			console.error("Error creating schedule:", error);
-			callback({
-				status: 500,
-				data: { success: false, message: 'Server error while creating schedule.', error: error.message }
-			});
-		}
-	},
-	
 
+            let notificationResponse = null;
+
+            if (delay > 0) {
+                setTimeout(async () => {
+                    const user = await User.findById(userId);
+                    if (user && user.fcmToken) {
+                        notificationResponse = await sendNotification(user.fcmToken, "Scheduled Alert", "Your scheduled event is due now!");
+                        console.log(`Notification sent to user ${userId}`);
+                    }
+                }, delay);
+            }
+
+            callback({
+                status: 201,
+                data: { 
+                    success: true, 
+                    message: 'Schedule created successfully.', 
+                    schedule: newSchedule, 
+                    notification: notificationResponse // Pass notification response
+                }
+            });
+
+        } catch (error) {
+            console.error("Error creating schedule:", error);
+            callback({
+                status: 500,
+                data: { success: false, message: 'Server error while creating schedule.', error: error.message }
+            });
+        }
+    },
+	
 	SCHEDULE_UPDATE: async function(data, callback) {
 		const { scheduleId, date, time } = data;
 	
-		// Convert the new date and time to a valid Date object
-		const updatedDate = new Date(`${date} ${time}`);
-		
 		try {
 			// Find and update the schedule by scheduleId
 			const objectId = new mongoose.Types.ObjectId(scheduleId);
 			const updatedSchedule = await Schedule.updateOne(
 				{ _id: objectId }, // Filter by scheduleId
-				{ $set: { date: updatedDate, time: time } } // Set the new date and time fields
+				{ $set: { date: date, time: time } } // Set the new date and time fields
 			);
 	
 			if (updatedSchedule.modifiedCount === 0) {
@@ -97,6 +109,7 @@ module.exports = {
 			return;
 		}
 	},
+	
 	
 	SCHEDULE_GET: async function(data, callback) {
 		const { userId } = data;

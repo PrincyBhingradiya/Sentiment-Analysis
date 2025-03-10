@@ -8,7 +8,7 @@ const scheduleSchema = new mongoose.Schema({
   },
   title: {
     type: String,
-    default: "It's time to recognize or scan your face!"
+    default: "Don't forget! Log your mood now to stay on track."
   },
   date: {
     type: String,

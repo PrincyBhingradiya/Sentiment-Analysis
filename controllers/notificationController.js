@@ -1,53 +1,51 @@
-// const User = require("../models/users");
-// const admin = require("../config/firebaseConfig");
+const User = require("../models/users");
+const sendNotification = require("../utils/sendNotification");
 
-// // 🔹 Store FCM Token
-// exports.storeToken = async (req, res) => {
-//     const { userId, fcmToken } = req.body;
+/**
+ * Save FCM Token for a user
+ */
+exports.saveFcmToken = async (req, res) => {
+    const { userId, fcmToken } = req.body;
 
-//     if (!userId || !fcmToken) {
-//         return res.status(400).json({ error: "Missing userId or fcmToken" });
-//     }
+    if (!userId || !fcmToken) {
+        return res.status(400).json({ success: false, message: "User ID and FCM Token are required." });
+    }
 
-//     try {
-//         let user = await User.findOne({ userId });
-//         if (user) {
-//             user.fcmToken = fcmToken;
-//         } else {
-//             user = new User({ userId, fcmToken });
-//         }
-//         await user.save();
-//         res.json({ message: "Token stored successfully!" });
-//     } catch (error) {
-//         console.error("Database error:", error);
-//         res.status(500).json({ error: "Failed to store token" });
-//     }
-// };
+    try {
+        const user = await User.findByIdAndUpdate(userId, { fcmToken }, { new: true });
 
-// // 🔹 Send Push Notification
-// exports.sendNotification = async (req, res) => {
-//     const { userId, title, body } = req.body;
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
 
-//     if (!userId || !title || !body) {
-//         return res.status(400).json({ error: "Missing parameters" });
-//     }
+        res.status(200).json({ success: true, message: "FCM Token saved successfully.", user });
+    } catch (error) {
+        console.error("Error saving FCM token:", error);
+        res.status(500).json({ success: false, message: "Server error." });
+    }
+};
 
-//     try {
-//         const user = await User.findOne({ userId });
-//         if (!user || !user.fcmToken) {
-//             return res.status(404).json({ error: "User not found or no FCM token" });
-//         }
+/**
+ * Send Notification to a specific user
+ */
+exports.sendPushNotification = async (req, res) => {
+    const { userId, title, body } = req.body;
 
-//         const message = {
-//             token: user.fcmToken,
-//             notification: { title, body },
-//             data: { customData: "extra_info" }, // Optional extra data
-//         };
+    if (!userId || !title || !body) {
+        return res.status(400).json({ success: false, message: "User ID, title, and body are required." });
+    }
 
-//         await admin.messaging().send(message);
-//         res.json({ message: "Notification sent successfully!" });
-//     } catch (error) {
-//         console.error("Error sending notification:", error);
-//         res.status(500).json({ error: "Notification sending failed!" });
-//     }
-// };
+    try {
+        const user = await User.findById(userId);
+
+        if (!user || !user.fcmToken) {
+            return res.status(404).json({ success: false, message: "User not found or FCM token missing." });
+        }
+
+        const result = await sendNotification(user.fcmToken, title, body);
+        res.status(result.success ? 200 : 500).json(result);
+    } catch (error) {
+        console.error("Error sending notification:", error);
+        res.status(500).json({ success: false, message: "Server error." });
+    }
+};

@@ -7,3 +7,4 @@ scheduleurl.BindUrl();
 
 Activityurl = module.exports = require('../settings/activities_url.js');
 Activityurl.BindUrl();
+

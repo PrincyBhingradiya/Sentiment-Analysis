@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -37,7 +39,7 @@ const userSchema = new mongoose.Schema({
   },
   fcmToken: {
     type: String,
-    required: false
+    default: null
   },
   
 });
