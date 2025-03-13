@@ -212,20 +212,21 @@ module.exports = {
 	
 	GET_ALL_USERS: async function(searchQuery, callback) {
 		try {
-			let filter = {};
+			let filter = {
+				email: { $ne: "princybhingradiya9912@gmail.com" } // Exclude admin by email
+			};
+	
 			if (searchQuery) {
-				filter = {
-					$or: [
-						{ name: { $regex: searchQuery, $options: "i" } },  
-						{ email: { $regex: searchQuery, $options: "i" } } 
-					]
-				};
+				filter.$or = [
+					{ name: { $regex: searchQuery, $options: "i" } },
+					{ email: { $regex: searchQuery, $options: "i" } }
+				];
 			}
 	
 			const users = await User.find(filter, { name: 1, email: 1, _id: 0 }); // Only fetch name & email
 	
 			return callback({
-				status: 200,                         
+				status: 200,
 				data: { success: true, users }
 			});
 	
@@ -238,12 +239,18 @@ module.exports = {
 		}
 	},
 	
+	
 	SEARCH_USERS: async function(searchQuery, callback) {
 		try {
 			let filter = {
 				$or: [
-					{ name: { $regex: searchQuery, $options: "i" } },  
-					{ email: { $regex: searchQuery, $options: "i" } } 
+					{ name: { $regex: searchQuery, $options: "i" } },
+					{ email: { $regex: searchQuery, $options: "i" } }
+				],
+				// Exclude the admin's email and username
+				$and: [
+					{ email: { $ne: "princybhingradiya9912@gmail.com" } },
+					{ name: { $ne: "princy" } } // Replace "princy" with the admin's actual username
 				]
 			};
 	
@@ -269,6 +276,7 @@ module.exports = {
 			});
 		}
 	},
+	
 
 	FORGOT:async function(data, callback) {
 			const { email } = data;
