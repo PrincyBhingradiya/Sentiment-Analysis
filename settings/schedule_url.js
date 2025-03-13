@@ -6,7 +6,7 @@ const sendNotification = require("../utils/sendNotification");
 
 
 module.exports = {
-	BindUrl: function () {
+    BindUrl: function () {
         app.post('/Schedule/create', authenticate, (req, res) => {
             if (!req.user || !req.user._id) {
                 return res.status(401).json({ success: false, message: "Unauthorized: Invalid token." });

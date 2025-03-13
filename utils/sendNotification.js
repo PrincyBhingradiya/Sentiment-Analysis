@@ -1,29 +1,23 @@
-const admin = require("firebase-admin");
+const admin = require("../config/firebaseConfig"); // ✅ Import Firebase config
 
-/**
- * Send a push notification using Firebase Cloud Messaging (FCM)
- * @param {string} fcmToken - User's FCM Token
- * @param {string} title - Notification title
- * @param {string} body - Notification message
- * @returns {Promise<object>} - Returns success or failure response
- */
-const sendNotification = async (fcmToken, title, body) => {
+const sendNotification = async (fcmToken, message) => {
     if (!fcmToken) {
-        console.error("FCM Token is missing.");
-        return { success: false, message: "No FCM token provided." };
+        console.error("❌ FCM Token is missing!");
+        return { success: false, message: "FCM Token is missing" };
     }
 
-    const message = {
+    const payload = {
+        notification: {
+            title: "New Notification",
+            body: message,
+        },
         token: fcmToken,
-        notification: { title, body },
-        android: { priority: "high", notification: { sound: "default" } },
-        apns: { payload: { aps: { sound: "default" } } },
     };
 
     try {
-        const response = await admin.messaging().send(message);
+        const response = await admin.messaging().send(payload);
         console.log("✅ Notification sent successfully:", response);
-        return { success: true, response };
+        return { success: true, message: "Notification sent", response };
     } catch (error) {
         console.error("❌ Error sending notification:", error);
         return { success: false, message: error.message };

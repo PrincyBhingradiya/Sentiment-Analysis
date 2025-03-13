@@ -6,29 +6,29 @@ const { googleAuth } = require('../controllers/authController');
 
 module.exports = {
 	BindUrl: function () {
-	    app.post("/signup", function (req, res) {
-	    	const { name, email, password,type, googleId, fcmToken  } = req.body;
+		app.post("/signup", function (req, res) {
+			const { name, email, password,type, googleId, fcmToken  } = req.body;
 
 			const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 			const validatePassword = (password) => password.length >= 8;
 
-		    if (!name || !email || !password) {
-		        return res.status(400).json({ success: false, message: 'All fields are required.' });
-		    }
-		    if (!emailRegex.test(email)) {
-		        return res.status(400).json({ success: false, message: 'Invalid email format. ' });
-		    }
-		    if (!validatePassword(password)) {
-		        return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
-		    }
+			if (!name || !email || !password) {
+				return res.status(400).json({ success: false, message: 'All fields are required.' });
+			}
+			if (!emailRegex.test(email)) {
+				return res.status(400).json({ success: false, message: 'Invalid email format. ' });
+			}
+			if (!validatePassword(password)) {
+				return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
+			}
 
 			var data = { name, email, password, type, googleId, fcmToken  };
 			usersController.REGISTER(data, function(respData) {
-	    		res.status(respData.status).json(respData.data);
-	    	});
-	    });
+				res.status(respData.status).json(respData.data);
+			});
+		});
 
-	    app.post("/login", async function (req, res) {  // ✅ Mark route handler as async
+		app.post("/login", async function (req, res) {  // ✅ Mark route handler as async
 			const { email, password, keepMeSignedIn, fcmToken } = req.body;
 		
 			const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
@@ -119,8 +119,8 @@ module.exports = {
 		app.post("/forgot",function(req,res){
 			const { email } = req.body;
 			if (!email) {
-		    	return res.status(400).json({ success: false, message: 'email is required.' });
-		    }
+				return res.status(400).json({ success: false, message: 'email is required.' });
+			}
 
 			var data = req.body;
 			usersController.FORGOT(data, function(respData) {
@@ -129,21 +129,21 @@ module.exports = {
 		});
 		
 	app.post("/reset", function (req, res) {
-    const { email, otp, newPassword } = req.body;
+	const { email, otp, newPassword } = req.body;
 
-    if (!email || !otp || !newPassword) {
-        return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required.' });
-    }
+	if (!email || !otp || !newPassword) {
+		return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required.' });
+	}
 
-    const validatePassword = (password) => password.length >= 8;
-    if (!validatePassword(newPassword)) {
-        return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
-    }
+	const validatePassword = (password) => password.length >= 8;
+	if (!validatePassword(newPassword)) {
+		return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
+	}
 
-    var data = req.body;
-    usersController.RESET(data, function(respData) {
-        res.status(respData.status).json(respData.data);
-    });
+	var data = req.body;
+	usersController.RESET(data, function(respData) {
+		res.status(respData.status).json(respData.data);
+	});
 		});
 
 	app.post("/logout", function (req, res) {

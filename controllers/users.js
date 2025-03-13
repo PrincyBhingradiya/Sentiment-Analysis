@@ -275,14 +275,14 @@ module.exports = {
 		try {
 			const user= await User.findOne({ email });
 			if (!user) {
-	        	var sendData = {
-		        	status: 404,
-		        	data: { success: false, message: 'User not found.' }
-		        };
-		        callback(sendData);
+				var sendData = {
+					status: 404,
+					data: { success: false, message: 'User not found.' }
+				};
+				callback(sendData);
 				return;
-	        }
-	        console.log("User found:", user);
+			}
+			console.log("User found:", user);
 
 			console.log("process.env.JWT_SECRET", process.env.JWT_SECRET);
 			let min = 100000;
@@ -290,7 +290,7 @@ module.exports = {
 			let random = Math.floor(Math.random() * (max - min + 1)) + min;
 
 			const newforgotPassword = new forgotPassword({ email: email.toLowerCase(), otp: random });
-	        await newforgotPassword.save(); 
+			await newforgotPassword.save(); 
 	
 			const message = `Hello there,
 			Your reset password OTP is: ${random}
@@ -316,20 +316,20 @@ module.exports = {
 			await transporter.sendMail(mailOptions);
 
 			var sendData = {
-	        	status: 200,
-	        	data: { success: true, message: 'Password reset OTP sent to email', random }
-	        };
-	        callback(sendData);
+				status: 200,
+				data: { success: true, message: 'Password reset OTP sent to email', random }
+			};
+			callback(sendData);
 			return;
-	    } catch (error) {
-	        var sendData = {
-	        	status: 500,
-	        	data: { success: false, message: 'Error sending email', error: error.message }
-	        };
-	        console.error("forgot password error:", error);
-	        callback(sendData);
+		} catch (error) {
+			var sendData = {
+				status: 500,
+				data: { success: false, message: 'Error sending email', error: error.message }
+			};
+			console.error("forgot password error:", error);
+			callback(sendData);
 			return;
-	    }
+		}
 	},
 
 	RESET: async function(data, callback) {
